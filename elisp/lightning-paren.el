@@ -125,12 +125,12 @@ Successive execution moves that close paren across following expressions."
   (interactive "P")
   (if arg
       (self-insert-command (prefix-numeric-value arg))
-    (if (/= (char-syntax last-input-char) ?\) )
+    (if (/= (char-syntax last-input-event) ?\) )
         (self-insert-command 1)
       (let ((echo-keystrokes 0)                 ;inhibit echo on read-char
-            (cl-char last-input-char)
+            (cl-char last-input-event)
 ;;            (op-char (% (/ (aref (syntax-table) last-input-char) 256) 256))
-            (op-char (opposite_paren last-input-char))
+            (op-char (opposite_paren last-input-event))
                                                 ;こんな計算でいいのか?(;^^)
             op-pos cl-pos ch)
         (insert op-char cl-char)

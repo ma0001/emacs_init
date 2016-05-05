@@ -158,7 +158,7 @@
 
 ;; disable drag and drop in dired-mode
 (setq dired-dnd-protocol-alist nil)
-(define-key global-map [ns-drag-file] 'ns-find-file)
+(global-set-key [ns-drag-file] 'ns-find-file)
 
 ; dabbrev-expand で大文字小文字の変換機能をオフにする
 (setq dabbrev-case-replace nil)
@@ -310,8 +310,10 @@
 (require 'helm-config)
 
 ;; key bindings
-(define-key global-map (kbd "C-x C-f") 'helm-find-files)
-(define-key global-map (kbd "C-x b")   'helm-buffers-list)
+(global-set-key (kbd "C-x C-f") 'helm-for-files)
+(global-set-key (kbd "C-x b")   'helm-buffers-list)
+(global-set-key (kbd "M-y")     'helm-show-kill-ring)
+(global-set-key (kbd "M-x")     'helm-M-x)
 
 (define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ; rebind tab to run persistent action
 
@@ -438,6 +440,27 @@
       (add-hook 'isearch-mode-hook 'mac-change-language-to-us))))
 
 ;; ----------------------------------------------------------------
+;; highlight symbol
+;; ----------------------------------------------------------------
+(require 'highlight-symbol)
+;;; 1秒後自動ハイライトされるようになる
+(setq highlight-symbol-idle-delay 1.0)
+;;; 自動ハイライトをしたいならば
+(add-hook 'prog-mode-hook 'highlight-symbol-mode)
+;;; ソースコードにおいてM-p/M-nでシンボル間を移動
+(add-hook 'prog-mode-hook 'highlight-symbol-nav-mode)
+;;; ポイント位置のシンボルをハイライト
+(global-set-key (kbd "M-g h") 'highlight-symbol-at-point)
+
+;; ----------------------------------------------------------------
+;; expand region
+;; ----------------------------------------------------------------
+(require 'expand-region)
+(global-set-key (kbd "C-,") 'er/expand-region)
+(global-set-key (kbd "C-M-,") 'er/contract-region)
+
+
+;; ----------------------------------------------------------------
 ;; scheme (gauche)
 ;; ----------------------------------------------------------------
 (autoload 'gauche-mode "gauche-mode" nil t)
@@ -453,8 +476,7 @@
    (get-buffer-create "*scheme*"))
   (run-scheme scheme-program-name))
 
-(define-key global-map
-  "\C-cs" 'scheme-other-window)
+(global-set-key  "\C-cs" 'scheme-other-window)
 
 (setq file-coding-system-alist
       (cons '("gauche-refj\\.info.*\\'" utf-8 . utf-8)

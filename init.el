@@ -9,6 +9,10 @@
 (setq system-darwin-p (eq system-type 'darwin)
       system-windows-p (or (eq system-type 'windows-nt)
                            (eq system-type 'cygwin)))
+;;
+(set-language-environment 'Japanese)
+(prefer-coding-system 'utf-8)
+
 ;; ----------------------------------------------------------------
 ;; theme
 ;; ----------------------------------------------------------------
@@ -43,7 +47,7 @@
 (cond
  (system-darwin-p
   ;; デフォルトIME
-  (setq default-input-method "MacOSX")
+  (setq default-input-method "MacOSX")  ;set-language-environmentよりもあとにないとだめ
   ;; モードラインの表示文字列
 ;  (mac-set-input-method-parameter "com.google.inputmethod.Japanese.base" `title "あ")
   ;; カーソルの色
@@ -152,10 +156,6 @@
 (global-set-key "\M-l" 'goto-line)
 (global-set-key "\C-xc" 'compile)
 
-;;
-(set-language-environment 'Japanese)
-(prefer-coding-system 'utf-8)
-
 ;; disable drag and drop in dired-mode
 (setq dired-dnd-protocol-alist nil)
 (define-key global-map [ns-drag-file] 'ns-find-file)
@@ -217,7 +217,9 @@
 ;; ----------------------------------------------------------------
 ;; grep , ag
 ;; ----------------------------------------------------------------
-(global-set-key "\M-g\M-r" 'ag)
+;Functions are autoloaded, so (require 'ag) is unnecessary.
+(global-set-key "\M-g\M-f" 'ag)
+(global-set-key "\M-g\M-r" 'ag-regexp)
 (setq ag-highlight-search t)  ; 検索キーワードをハイライト
 (setq ag-reuse-buffers nil)     ; 検索ごとに新バッファを作る
 

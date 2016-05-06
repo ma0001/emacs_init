@@ -310,7 +310,8 @@
 (require 'helm-config)
 
 ;; key bindings
-(global-set-key (kbd "C-x C-f") 'helm-for-files)
+;(global-set-key (kbd "C-x C-f") 'helm-for-files)
+(global-set-key (kbd "C-x C-f") 'helm-find-files)
 (global-set-key (kbd "C-x b")   'helm-buffers-list)
 (global-set-key (kbd "M-y")     'helm-show-kill-ring)
 (global-set-key (kbd "M-x")     'helm-M-x)
@@ -376,6 +377,19 @@
   (define-key irony-mode-map [remap complete-symbol]
     'irony-completion-at-point-async))
 (add-hook 'irony-mode-hook 'my-irony-mode-hook)
+(add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
+
+;; Only needed on Windows
+(when system-windows-p
+  (setq w32-pipe-read-delay 0))
+
+;; Example .clang_complete file: >
+;;  -DDEBUG
+;;  -include ../config.h
+;;  -I../common
+;;  -I/usr/include/c++/4.5.3/
+;;  -I/usr/include/c++/4.5.3/x86_64-slackware-linux/
+;; <
 
 ;; ----------------------------------------------------------------
 ;; compamy irony
@@ -401,6 +415,14 @@
 ;; flycheck
 ;; ----------------------------------------------------------------
 (add-hook 'after-init-hook #'global-flycheck-mode)
+
+;; ----------------------------------------------------------------
+;; flycheck-irony
+;; ----------------------------------------------------------------
+(eval-after-load "flycheck"
+  '(progn
+     (when (locate-library "flycheck-irony")
+       (flycheck-irony-setup))))
 
 ;; ----------------------------------------------------------------
 ;; shell
@@ -437,7 +459,8 @@
       (setq migemo-coding-system 'utf-8-unix)
       (migemo-init)
       ;; [migemo]isearch のとき IME を英数モードにする
-      (add-hook 'isearch-mode-hook 'mac-change-language-to-us))))
+      (when system-darwin-p
+             (add-hook 'isearch-mode-hook 'mac-change-language-to-us)))))
 
 ;; ----------------------------------------------------------------
 ;; highlight symbol

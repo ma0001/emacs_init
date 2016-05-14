@@ -400,9 +400,15 @@
 ;; ----------------------------------------------------------------
 ;; aspell
 ;; ----------------------------------------------------------------
+;; you may need "lang en_US" in ~/.aspell.conf 
 (setq-default ispell-program-name "aspell")
 (eval-after-load "ispell"
  '(add-to-list 'ispell-skip-region-alist '("[^\000-\377]+")))
+
+;; ----------------------------------------------------------------
+;; english/Japanese translator for programmers
+;; ----------------------------------------------------------------
+(require 'codic)
 
 ;; ----------------------------------------------------------------
 ;; color-moccur  (ELPA)
@@ -515,12 +521,12 @@
 ;; ----------------------------------------------------------------
 ;; R
 ;; ----------------------------------------------------------------
-(require 'ess-site)
+;(require 'ess-site)
 
-(fset 'change-to-maxtry
-      [?\C-  ?\C-s tab ?\C-s ?\C-s ?\C-s return ?\C-w ?m ?a ?x ?t ?r ?y ?\( ?\" ?\C-s ?\C-s ?\C-b ?\" ?, ?\C-  ?\C-s ?\C-s ?\C-s return ?\C-w ?\" ?\C-s ?\C-s ?\C-b ?\" ?, ?1 ?0 ?\) ?\C-k ])
+;; (fset 'change-to-maxtry
+;;       [?\C-  ?\C-s tab ?\C-s ?\C-s ?\C-s return ?\C-w ?m ?a ?x ?t ?r ?y ?\( ?\" ?\C-s ?\C-s ?\C-b ?\" ?, ?\C-  ?\C-s ?\C-s ?\C-s return ?\C-w ?\" ?\C-s ?\C-s ?\C-b ?\" ?, ?1 ?0 ?\) ?\C-k ])
 
-(defun change-to-maxtry-region (top bottom)
-  (interactive "r")
-  (apply-macro-to-region-lines top bottom (symbol-function 'change-to-maxtry)))
+;; (defun change-to-maxtry-region (top bottom)
+;;   (interactive "r")
+;;   (apply-macro-to-region-lines top bottom (symbol-function 'change-to-maxtry)))
    

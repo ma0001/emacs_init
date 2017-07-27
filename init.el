@@ -11,13 +11,14 @@
                            (eq system-type 'cygwin)))
 ;;
 (set-language-environment 'Japanese)
-(prefer-coding-system 'utf-8)
+(prefer-coding-system 'utf-8-unix)
 
 ;; ----------------------------------------------------------------
 ;; theme
 ;; ----------------------------------------------------------------
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
 (load-theme 'wheat t)
+;(load-theme 'gnupack-dark t)
 
 ;; 選択バッファをわかりやすく表示
 (custom-set-faces
@@ -126,6 +127,35 @@
   (add-to-list 'default-frame-alist '(font . "fontset-menlokakugo")))
 
  (system-windows-p
+  ;; フォント
+  ;; abcdefghijklmnopqrstuvwxyz 
+  ;; ABCDEFGHIJKLMNOPQRSTUVWXYZ
+  ;; `1234567890-=\[];',./
+  ;; ~!@#$%^&*()_+|{}:"<>?
+  ;;
+  ;; 壱弐参四五壱弐参四五壱弐参四五壱弐参四五壱弐参四五壱弐参四五
+  ;; 123456789012345678901234567890123456789012345678901234567890
+  ;; ABCdeＡＢＣｄｅ
+  ;;
+  ;; ┌─────────────────────────────┐
+  ;; │　　　　　　　　　　　　　罫線                            │
+  ;; └─────────────────────────────┘
+  ;;
+
+;;  (set-face-attribute 'default nil :family "Consolas" :height 90)
+  (set-face-attribute 'default nil :family "Courier New" :height 90)
+  (set-fontset-font nil 'japanese-jisx0208 (font-spec :family "MeiryoKe_Console"))
+  (setq face-font-rescale-alist '(("MeiryoKe_Console" . 1.08)))
+
+  ;;
+  ;; リストを評価する(Ctrl-j)
+  ;;   フォントファミリ (pp (font-family-list))
+  ;;   文字セット       (pp (charset-list))
+  ;;   フェース         (pp (face-list))
+
+
+  )
+ (nil
   ;; デフォルト フォント
   ;; (set-face-attribute 'default nil :family "Migu 1M" :height 110)
   (set-face-font 'default "Migu 1M-11:antialias=standard")
@@ -167,6 +197,9 @@
 (setq dabbrev-case-replace nil)
 (setq dabbrev-case-fold-search nil)
 
+;検索で大文字考慮しない
+(setq-default case-fold-search t)
+
 (setq visible-bell nil)
 
 (global-set-key "\M-o" 'universal-argument)
@@ -183,10 +216,30 @@
 ;; 列番号の表示（有効：t、無効：nil）
 (column-number-mode nil)
 
+(global-set-key "\M-ga" 'align-regexp)
+
 (set-cursor-color "Orange")
 (blink-cursor-mode 1)
 
 (setq use-dialog-box nil)
+;; 
+(setq recentf-max-saved-items 100)
+
+(setq default-tab-width 4)
+
+(setq line-move-visual nil)
+
+(setq warning-suppress-types nil)
+;; ----------------------------------------------------------------
+;; backup
+;; ----------------------------------------------------------------
+
+(setq backup-directory-alist
+  (cons (cons ".*" (expand-file-name "~/.emacs.d/backup"))
+        backup-directory-alist))
+
+(setq auto-save-file-name-transforms
+  `((".*", (expand-file-name "~/.emacs.d/backup/") t)))
 
 ;; ----------------------------------------------------------------
 ;; line number
@@ -223,8 +276,8 @@
 ;; grep , ag
 ;; ----------------------------------------------------------------
 ;Functions are autoloaded, so (require 'ag) is unnecessary.
-(global-set-key "\M-g\M-f" 'ag)
-(global-set-key "\M-g\M-r" 'ag-regexp)
+(global-set-key "\M-g\M-r" 'ag)
+(global-set-key "\M-g\M-f" 'ag-regexp)
 (setq ag-highlight-search t)  ; 検索キーワードをハイライト
 (setq ag-reuse-buffers nil)     ; 検索ごとに新バッファを作る
 
@@ -241,6 +294,7 @@
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/"))
 ;(add-to-list 'package-archives  '("marmalade" . "http://marmalade-repo.org/packages/"))
+;(setq url-proxy-services '(("http" . "proxy-odc.intra.daifuku.co.jp:8080")))
 (package-initialize)
 
 ;; ----------------------------------------------------------------
@@ -259,7 +313,8 @@
 ;; ----------------------------------------------------------------
 (let ((_exec-path (executable-find "gtags")))
   (when _exec-path
-    (let ((elisp-path (replace-regexp-in-string "/bin/" "/share/" _exec-path)))
+    (let ((elisp-path (replace-regexp-in-string ".exe" ""
+                                                (replace-regexp-in-string "/bin/" "/share/" _exec-path))))
       (add-to-list 'load-path elisp-path)
       (require 'gtags)
       (setq gtags-path-style 'relative)
@@ -273,36 +328,53 @@
                (define-key gtags-mode-map (kbd "M-*") 'gtags-pop-stack)
                (define-key gtags-mode-map (kbd "M-g s") 'gtags-find-symbol)
                (define-key gtags-mode-map (kbd "M-g g") 'gtags-find-pattern)
-               (define-key gtags-select-mode-map (kbd "M-*") 'gtags-pop-stack))))))
+               (define-key gtags-mode-map (kbd "M-g f") 'gtags-find-file)
+               (define-key gtags-select-mode-map (kbd "M-*") 'gtags-pop-stack)
+;               (define-key gtags-select-mode-map (kbd "C-j") (lambda() (save-excursion (gtags-select-tag-other-window))))
+               ))
+      (setq-default gtags-ignore-case nil))))
+
+;;; セーブ時にtagを自動更新
+(defun my-c-mode-update-gtags ()
+  (let* ((file (buffer-file-name (current-buffer)))
+     (dir (directory-file-name (file-name-directory file))))
+    (when (executable-find "global")
+      (start-process "gtags-update" nil
+             "global" "-uv"))))
+
+(add-hook 'after-save-hook
+      'my-c-mode-update-gtags)
+
+;(setenv "GTAGSLIBPATH" "C:/pro3/snap5/std;C:/qnx660/target")
+(setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
 
 ;; ----------------------------------------------------------------
 ;;  for SLIME
 ;; ----------------------------------------------------------------
-(setq slime-lisp-implementations
-;;     `((sbcl ("/Users/masami/local/bin/sbcl" "--core" "/Users/masami/local/lib/sbcl/sbcl.core"))
-     `((sbcl ("/opt/local/bin/sbcl"))
-       (abcl ("/opt/local/bin/abcl"))
-       (clisp ("/opt/local/bin/clisp"))))
-(require 'slime)
-(slime-setup  '(slime-repl slime-asdf slime-fancy slime-banner))
+;; (setq slime-lisp-implementations
+;; ;;     `((sbcl ("/Users/masami/local/bin/sbcl" "--core" "/Users/masami/local/lib/sbcl/sbcl.core"))
+;;      `((sbcl ("/opt/local/bin/sbcl"))
+;;        (abcl ("/opt/local/bin/abcl"))
+;;        (clisp ("/opt/local/bin/clisp"))))
+;; (require 'slime)
+;; (slime-setup  '(slime-repl slime-asdf slime-fancy slime-banner))
 
-;;(setq inferior-lisp-program "~/src/sbcl/src/runtime/sbcl --core /Users/masami/src/sbcl/output/sbcl.core --no-userinit")
+;; ;;(setq inferior-lisp-program "~/src/sbcl/src/runtime/sbcl --core /Users/masami/src/sbcl/output/sbcl.core --no-userinit")
 
-(setq slime-net-coding-system 'utf-8-unix)
+;; (setq slime-net-coding-system 'utf-8-unix)
 
-(add-hook 'inferior-lisp-mode-hook (lambda () (inferior-slime-mode t)))
-(add-hook 'lisp-mode-hook (lambda ()
-			    (slime-mode t)
-			    (show-paren-mode 1)
-			    (global-set-key "\C-cH" 'hyperspec-lookup)))
+;; (add-hook 'inferior-lisp-mode-hook (lambda () (inferior-slime-mode t)))
+;; (add-hook 'lisp-mode-hook (lambda ()
+;; 			    (slime-mode t)
+;; 			    (show-paren-mode 1)
+;; 			    (global-set-key "\C-cH" 'hyperspec-lookup)))
 
 ;; ----------------------------------------------------------------
 ;; c++ c mode
 ;; ----------------------------------------------------------------
 (autoload 'vs-set-c-style "vs-set-c-style")
 
-(add-hook 'c-mode-hook 'vs-set-c-style)
-(add-hook 'c++-mode-hook 'vs-set-c-style)
+(add-hook 'c-mode-common-hook 'vs-set-c-style)
 
 ;; auto detect header file
 (add-to-list 'auto-mode-alist '("\\.h$" . dummy-h-mode))
@@ -326,7 +398,7 @@
 ;; ----------------------------------------------------------------
 ;; helm gtags
 ;; ----------------------------------------------------------------
-(require 'helm-gtags)
+;;(require 'helm-gtags)
 
 ;; (add-hook 'c-mode-hook 'helm-gtags-mode)
 ;; (add-hook 'c++-mode-hook 'helm-gtags-mode)
@@ -346,6 +418,7 @@
   '(progn
      ;; companyと競合するのでyasnippetのフィールド移動は "C-i" のみにする
      (define-key yas-keymap (kbd "<tab>") nil)
+     (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
      (yas-global-mode 1)))
 (require 'yasnippet)
 (require 'helm-c-yasnippet)
@@ -420,7 +493,8 @@
 ;; aspell
 ;; ----------------------------------------------------------------
 ;; you may need "lang en_US" in ~/.aspell.conf 
-(setq-default ispell-program-name "aspell")
+(setq-default ispell-program-name "hunspell")
+(setenv "DICTIONARY" "en_US")
 (eval-after-load "ispell"
  '(add-to-list 'ispell-skip-region-alist '("[^\000-\377]+")))
 
@@ -487,6 +561,11 @@
 (setq moccur-split-word t)
 
 ;; ----------------------------------------------------------------
+;; moccur-edit
+;; ----------------------------------------------------------------
+(require 'moccur-edit)
+
+;; ----------------------------------------------------------------
 ;; flycheck
 ;; ----------------------------------------------------------------
 (add-hook 'after-init-hook #'global-flycheck-mode)
@@ -498,7 +577,9 @@
   '(progn
      (when (locate-library "flycheck-irony")
        (flycheck-irony-setup))))
-
+(with-eval-after-load 'flycheck
+  (require 'flycheck-clang-analyzer)
+  (flycheck-clang-analyzer-setup))
 ;; ----------------------------------------------------------------
 ;; shell
 ;; ----------------------------------------------------------------
@@ -520,7 +601,8 @@
 ;; ----------------------------------------------------------------
 (let ((_exec-path (executable-find "cmigemo")))
   (when _exec-path
-    (let ((dict-path (replace-regexp-in-string "/bin/cmigemo" "/share/migemo/utf-8/migemo-dict" _exec-path)))
+    (let ((dict-path (replace-regexp-in-string ".exe" ""
+                                               (replace-regexp-in-string "/bin/cmigemo" "/share/migemo/utf-8/migemo-dict" _exec-path))))
 
       (require 'migemo)
       (setq migemo-command "cmigemo")
@@ -549,6 +631,8 @@
 (add-hook 'prog-mode-hook 'highlight-symbol-nav-mode)
 ;;; ポイント位置のシンボルをハイライト
 (global-set-key (kbd "M-g h") 'highlight-symbol-at-point)
+
+(global-set-key (kbd "M-g q") 'highlight-symbol-query-replace)
 
 ;; ----------------------------------------------------------------
 ;; expand region
@@ -636,3 +720,12 @@
 
 (global-set-key (kbd "C-M-t") 'google-translate-enja-or-jaen)
 
+(put 'narrow-to-region 'disabled nil)
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   (quote
+    (flycheck-clang-analyzer popwin google-translate company-irony wgrep-ag search-web migemo irony-eldoc highlight-symbol helm-c-yasnippet flycheck-irony expand-region dummy-h-mode company-irony-c-headers color-moccur codic beacon ag))))

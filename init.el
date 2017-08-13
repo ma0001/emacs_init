@@ -348,20 +348,6 @@
 ;(setenv "GTAGSLIBPATH" "C:/pro3/snap5/std;C:/qnx660/target")
 (setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
 
-;; ----------------------------------------------------------------
-;;  for SLIME
-;; ----------------------------------------------------------------
-;; (setq slime-lisp-implementations
-;; ;;     `((sbcl ("/Users/masami/local/bin/sbcl" "--core" "/Users/masami/local/lib/sbcl/sbcl.core"))
-;;      `((sbcl ("/opt/local/bin/sbcl"))
-;;        (abcl ("/opt/local/bin/abcl"))
-;;        (clisp ("/opt/local/bin/clisp"))))
-;; (require 'slime)
-;; (slime-setup  '(slime-repl slime-asdf slime-fancy slime-banner))
-
-;; ;;(setq inferior-lisp-program "~/src/sbcl/src/runtime/sbcl --core /Users/masami/src/sbcl/output/sbcl.core --no-userinit")
-
-;; (setq slime-net-coding-system 'utf-8-unix)
 ; ---------------- rtags
 (when (and (executable-find "rdm")
            (executable-find "rc"))
@@ -408,11 +394,13 @@
 (define-key global-map (kbd "M-g n") (function rtags-next-match))
 (define-key global-map (kbd "M-g p") (function rtags-previous-match))
 
-;; (add-hook 'inferior-lisp-mode-hook (lambda () (inferior-slime-mode t)))
-;; (add-hook 'lisp-mode-hook (lambda ()
-;; 			    (slime-mode t)
-;; 			    (show-paren-mode 1)
-;; 			    (global-set-key "\C-cH" 'hyperspec-lookup)))
+;; ----------------------------------------------------------------
+;;  for SLIME
+;; ----------------------------------------------------------------
+(let ((sbcl-path (executable-find "sbcl")))
+  (when sbcl-path
+    (setq inferior-lisp-program sbcl-path)
+    (setq slime-contribs '(slime-repl slime-asdf slime-fancy slime-banner))))
 
 ;; ----------------------------------------------------------------
 ;; c++ c mode

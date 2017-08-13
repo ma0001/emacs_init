@@ -334,16 +334,8 @@
                ))
       (setq-default gtags-ignore-case nil))))
 
-;;; セーブ時にtagを自動更新
-(defun my-c-mode-update-gtags ()
-  (let* ((file (buffer-file-name (current-buffer)))
-     (dir (directory-file-name (file-name-directory file))))
-    (when (executable-find "global")
-      (start-process "gtags-update" nil
-             "global" "-uv"))))
-
-(add-hook 'after-save-hook
-      'my-c-mode-update-gtags)
+; gtags セーブでアップデート
+(setq gtags-auto-update 1)
 
 ;(setenv "GTAGSLIBPATH" "C:/pro3/snap5/std;C:/qnx660/target")
 (setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
@@ -754,6 +746,8 @@
 (global-set-key (kbd "C-M-t") 'google-translate-enja-or-jaen)
 
 (put 'narrow-to-region 'disabled nil)
+
+;; ---------------- customset
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -761,4 +755,4 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (flycheck-clang-analyzer popwin google-translate company-irony wgrep-ag search-web migemo irony-eldoc highlight-symbol helm-c-yasnippet flycheck-irony expand-region dummy-h-mode company-irony-c-headers color-moccur codic beacon ag))))
+    (irony-eldoc flycheck-clang-analyzer wgrep-ag slime search-web popwin migemo highlight-symbol helm-gtags helm-c-yasnippet google-translate flycheck-irony expand-region ess dummy-h-mode company-irony-c-headers company-irony color-moccur codic beacon auto-highlight-symbol auto-complete anything ag))))

@@ -309,7 +309,7 @@
 (global-set-key "\C-c}" 'lightning-close-paren)
 
 ;; ----------------------------------------------------------------
-;; gtags
+;; gtags, rtags
 ;; ----------------------------------------------------------------
 (let ((_exec-path (executable-find "gtags")))
   (when _exec-path
@@ -323,13 +323,13 @@
                    (gtags-mode 1)))
       (setq gtags-mode-hook
             '(lambda ()
-               (define-key gtags-mode-map (kbd "M-r") 'gtags-find-rtag)
-               (define-key gtags-mode-map (kbd "M-.") 'gtags-find-tag)
-               (define-key gtags-mode-map (kbd "M-*") 'gtags-pop-stack)
-               (define-key gtags-mode-map (kbd "M-g s") 'gtags-find-symbol)
+;               (define-key gtags-mode-map (kbd "M-r") 'gtags-find-rtag)
+;               (define-key gtags-mode-map (kbd "M-.") 'gtags-find-tag)
+;               (define-key gtags-mode-map (kbd "M-*") 'gtags-pop-stack)
+;               (define-key gtags-mode-map (kbd "M-g s") 'gtags-find-symbol)
                (define-key gtags-mode-map (kbd "M-g g") 'gtags-find-pattern)
-               (define-key gtags-mode-map (kbd "M-g f") 'gtags-find-file)
-               (define-key gtags-select-mode-map (kbd "M-*") 'gtags-pop-stack)
+;               (define-key gtags-mode-map (kbd "M-g f") 'gtags-find-file)
+;               (define-key gtags-select-mode-map (kbd "M-*") 'gtags-pop-stack)
 ;               (define-key gtags-select-mode-map (kbd "C-j") (lambda() (save-excursion (gtags-select-tag-other-window))))
                ))
       (setq-default gtags-ignore-case nil))))
@@ -362,6 +362,51 @@
 ;; ;;(setq inferior-lisp-program "~/src/sbcl/src/runtime/sbcl --core /Users/masami/src/sbcl/output/sbcl.core --no-userinit")
 
 ;; (setq slime-net-coding-system 'utf-8-unix)
+; ---------------- rtags
+(when (and (executable-find "rdm")
+           (executable-find "rc"))
+  (require 'rtags)
+  (setq rtags-display-result-backend 'helm)
+  (add-hook 'c-mode-hook 'rtags-start-process-unless-running)
+  (add-hook 'c++-mode-hook 'rtags-start-process-unless-running)
+  (add-hook 'objc-mode-hook 'rtags-start-process-unless-running))  
+  
+(defun use-rtags (&optional useFileManager)
+  (and (featurep 'rtags)
+       (cond ((not (gtags-get-rootpath)) t)
+             ((and (not (eq major-mode 'c++-mode))
+                   (not (eq major-mode 'c-mode))) (rtags-has-filemanager))
+             (useFileManager (rtags-has-filemanager))
+             (t (rtags-is-indexed)))))
+
+(defun tags-find-symbol ()
+  (interactive)
+  (call-interactively (if (use-rtags) 'rtags-find-symbol 'gtags-find-tag)))
+(defun tags-find-references ()
+  (interactive)
+  (call-interactively (if (use-rtags) 'rtags-find-references 'gtags-find-rtag)))
+(defun tags-pop-stack ()
+  (interactive)
+  (call-interactively (if (use-rtags) 'rtags-location-stack-back 'gtags-pop-stack)))
+(defun tags-find-file ()
+  (interactive)
+  (call-interactively (if (use-rtags t) 'rtags-find-file 'gtags-find-file)))
+
+(define-key c-mode-base-map (kbd "M-.") (function tags-find-symbol))
+(define-key c-mode-base-map (kbd "M-r") (function tags-find-references))
+(define-key c-mode-base-map (kbd "M-*") (function tags-pop-stack))
+(define-key c-mode-base-map (kbd "M-g f") (function tags-find-file))
+(define-key c-mode-base-map (kbd "M-g v") (function rtags-find-virtuals-at-point))
+(define-key c-mode-base-map (kbd "M-g n") (function rtags-next-match))
+(define-key c-mode-base-map (kbd "M-g p") (function rtags-previous-match))
+
+(define-key global-map (kbd "M-.") (function tags-find-symbol))
+(define-key global-map (kbd "M-r") (function tags-find-references))
+(define-key global-map (kbd "M-*") (function tags-pop-stack))
+(define-key global-map (kbd "M-g f") (function tags-find-file))
+(define-key global-map (kbd "M-g v") (function rtags-find-virtuals-at-point))
+(define-key global-map (kbd "M-g n") (function rtags-next-match))
+(define-key global-map (kbd "M-g p") (function rtags-previous-match))
 
 ;; (add-hook 'inferior-lisp-mode-hook (lambda () (inferior-slime-mode t)))
 ;; (add-hook 'lisp-mode-hook (lambda ()

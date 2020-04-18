@@ -36,7 +36,7 @@
 (cond
  (system-darwin-p
   ;; ¥の代わりにバックスラッシュを入力する
-  (mac-translate-from-yen-to-backslash)
+;;  (mac-translate-from-yen-to-backslash)
 
   (setq mac-command-modifier 'meta)
   (setq mac-option-modifier 'nil)
@@ -51,14 +51,15 @@
 (cond
  (system-darwin-p
   ;; デフォルトIME
-  (setq default-input-method "MacOSX")  ;set-language-environmentよりもあとにないとだめ
+;;  (setq default-input-method "MacOSX")  ;set-language-environmentよりもあとにないとだめ
   ;; モードラインの表示文字列
 ;  (mac-set-input-method-parameter "com.google.inputmethod.Japanese.base" `title "あ")
   ;; カーソルの色
 ;  (mac-set-input-method-parameter "com.google.inputmethod.Japanese.base" `cursor-color "red")
 ;  (mac-set-input-method-parameter "com.google.inputmethod.Japanese.Roman" `cursor-color "blue")
   ;; ミニバッファを開いたときに英字にする（閉じてもモードは戻らない）
-  (add-hook 'minibuffer-setup-hook 'mac-change-language-to-us))
+  ;;  (add-hook 'minibuffer-setup-hook 'mac-change-language-to-us))
+  (mac-auto-ascii-mode 1))
 
  (system-windows-p
   ;; モードラインの表示文字列
@@ -202,8 +203,6 @@
 
 (setq visible-bell nil)
 
-(global-set-key "\M-o" 'universal-argument)
-
 (show-paren-mode 1)
 ;; tool bar 非表示
 (tool-bar-mode 0)
@@ -242,60 +241,67 @@
   `((".*", (expand-file-name "~/.emacs.d/backup/") t)))
 
 ;; ----------------------------------------------------------------
+;; package list
+;; ----------------------------------------------------------------
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
+;(add-to-list 'package-archives  '("marmalade" . "http://marmalade-repo.org/packages/"))
+;(setq url-proxy-services '(("http" . "proxy-odc.intra.daifuku.co.jp:8080")))
+(package-initialize)
+
+;; ----------------------------------------------------------------
 ;; line number
 ;; ----------------------------------------------------------------
-(require 'linum)
+(use-package linum
+  :disabled
+  :init
+  (defvar linum-line-number 0)            ; 行移動を契機に描画
+  (declare-function linum-update-current "linum" ())
+  (defadvice linum-update-current
+      (around linum-update-current-around activate compile)
+    (unless (= linum-line-number (line-number-at-pos))
+      (setq linum-line-number (line-number-at-pos))
+      ad-do-it
+      ))
 
-;; 行移動を契機に描画
-(defvar linum-line-number 0)
-(declare-function linum-update-current "linum" ())
-(defadvice linum-update-current
-    (around linum-update-current-around activate compile)
-  (unless (= linum-line-number (line-number-at-pos))
-    (setq linum-line-number (line-number-at-pos))
-    ad-do-it
-    ))
+  ;; バッファ中の行番号表示の遅延設定
+  (defvar linum-delay nil)
+  (setq linum-delay t)
+  (defadvice linum-schedule (around linum-schedule-around () activate)
+    (run-with-idle-timer 1.0 nil #'linum-update-current))
 
-;; バッファ中の行番号表示の遅延設定
-(defvar linum-delay nil)
-(setq linum-delay t)
-(defadvice linum-schedule (around linum-schedule-around () activate)
-  (run-with-idle-timer 1.0 nil #'linum-update-current))
+  ;; 行番号の書式
+  (defvar linum-format nil)
+  (setq linum-format "%5d")
 
-;; 行番号の書式
-(defvar linum-format nil)
-(setq linum-format "%5d")
+  ;; バッファ中の行番号表示（有効：t、無効：nil）
+  (global-linum-mode t)
 
-;; バッファ中の行番号表示（有効：t、無効：nil）
-(global-linum-mode t)
+  ;; 文字サイズ
+  (set-face-attribute 'linum nil :height 0.75))
 
-;; 文字サイズ
-(set-face-attribute 'linum nil :height 0.75)
+(global-display-line-numbers-mode t)
 
 ;; ----------------------------------------------------------------
 ;; grep , ag
 ;; ----------------------------------------------------------------
-;Functions are autoloaded, so (require 'ag) is unnecessary.
-(global-set-key "\M-g\M-r" 'ag)
-(global-set-key "\M-g\M-f" 'ag-regexp)
-(setq ag-highlight-search t)  ; 検索キーワードをハイライト
-(setq ag-reuse-buffers nil)     ; 検索ごとに新バッファを作る
+(use-package ag
+  :ensure t
+  :defer t
+  :bind (("M-g M-r" . ag)
+         ("M-g M-f" . ag-regexp))
+  :init
+  (setq ag-highlight-search t)  ; 検索キーワードをハイライト
+  (setq ag-reuse-buffers nil))  ; 検索ごとに新バッファを作る
 
 ; wgrep
-(add-hook 'ag-mode-hook '(lambda ()
-                           (require 'wgrep-ag)
-                           (setq wgrep-auto-save-buffer t)  ; 編集完了と同時に保存
-                           (setq wgrep-enable-key "r")      ; "r" キーで編集モードに
-                           (wgrep-ag-setup)))
-
-;; ----------------------------------------------------------------
-;; package list
-;; ----------------------------------------------------------------
-(require 'package)
-(add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/"))
-;(add-to-list 'package-archives  '("marmalade" . "http://marmalade-repo.org/packages/"))
-;(setq url-proxy-services '(("http" . "proxy-odc.intra.daifuku.co.jp:8080")))
-(package-initialize)
+(use-package wgrep-ag
+  :ensure t
+  :commands (wgrep-ag-setup)
+  :init
+  (add-hook 'ag-mode-hook 'wgrep-ag-setup)
+  (setq wgrep-auto-save-buffer t)       ; 編集完了と同時に保存
+  (setq wgrep-enable-key "r"))          ; "r" キーで編集モードに
 
 ;; ----------------------------------------------------------------
 ;; lightning-paren
@@ -311,80 +317,76 @@
 ;; ----------------------------------------------------------------
 ;; gtags, rtags
 ;; ----------------------------------------------------------------
-(let ((_exec-path (executable-find "gtags")))
-  (when _exec-path
-    (let ((elisp-path (replace-regexp-in-string ".exe" ""
-                                                (replace-regexp-in-string "/bin/" "/share/" _exec-path))))
-      (add-to-list 'load-path elisp-path)
-      (require 'gtags)
-      (setq gtags-path-style 'relative)
-      (add-hook 'c-mode-common-hook
-                '(lambda()
-                   (gtags-mode 1)))
-      (setq gtags-mode-hook
-            '(lambda ()
-;               (define-key gtags-mode-map (kbd "M-r") 'gtags-find-rtag)
-;               (define-key gtags-mode-map (kbd "M-.") 'gtags-find-tag)
-;               (define-key gtags-mode-map (kbd "M-*") 'gtags-pop-stack)
-;               (define-key gtags-mode-map (kbd "M-g s") 'gtags-find-symbol)
-               (define-key gtags-mode-map (kbd "M-g g") 'gtags-find-pattern)
-;               (define-key gtags-mode-map (kbd "M-g f") 'gtags-find-file)
-;               (define-key gtags-select-mode-map (kbd "M-*") 'gtags-pop-stack)
-;               (define-key gtags-select-mode-map (kbd "C-j") (lambda() (save-excursion (gtags-select-tag-other-window))))
-               ))
-      (setq-default gtags-ignore-case nil))))
+(use-package gtags
+  :if (executable-find "gtags")
+  :commands (gtags-mode)
+  :init
+  ;; to use gtags.el that shipped with gtags
+  (let* ((_exec-path (replace-regexp-in-string ".exe" "" (executable-find "gtags")))
+         (elisp-path (replace-regexp-in-string "/bin/" "/share/" _exec-path)))
+    (add-to-list 'load-path elisp-path))
+  (setq gtags-path-style 'relative)
+  (add-hook 'c-mode-common-hook '(lambda() (gtags-mode 1)))
+  (setq-default gtags-ignore-case nil)
+  (setq gtags-auto-update 1)            ; gtags セーブでアップデート
+  (defun my-select-tag-other-window ()
+      (save-excursion (gtags-select-tag-other-window)))
+  ;; 追加のtag search path
+  (setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
+  :bind ( :map gtags-mode-map
+               ("M-r" . gtags-find-rtag)
+               ("M-." . gtags-find-tag)
+               ("M-g s" . gtags-find-symbol)
+               ("M-g g" . gtags-find-pattern)
+               ("M-g f" . gtags-find-file)
+               ("M-," . gtags-pop-stack)
+               ("M-*" . gtags-pop-stack)
+               ("C-j" . my-select-tag-other-window)))
+  
 
-; gtags セーブでアップデート
-(setq gtags-auto-update 1)
-
-;(setenv "GTAGSLIBPATH" "C:/pro3/snap5/std;C:/qnx660/target")
-(setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
-
-; ---------------- rtags
-(when (and (executable-find "rdm")
+;; ---------------- rtags
+(use-package rtags
+  :if (and (executable-find "rdm")
            (executable-find "rc"))
-  (require 'rtags)
+  :init
   (setq rtags-display-result-backend 'helm)
   (add-hook 'c-mode-hook 'rtags-start-process-unless-running)
   (add-hook 'c++-mode-hook 'rtags-start-process-unless-running)
-  (add-hook 'objc-mode-hook 'rtags-start-process-unless-running))  
-  
-(defun use-rtags (&optional useFileManager)
-  (and (featurep 'rtags)
-       (cond ((not (gtags-get-rootpath)) t)
-             ((and (not (eq major-mode 'c++-mode))
-                   (not (eq major-mode 'c-mode))) (rtags-has-filemanager))
-             (useFileManager (rtags-has-filemanager))
-             (t (rtags-is-indexed)))))
+  (add-hook 'objc-mode-hook 'rtags-start-process-unless-running)
 
-(defun tags-find-symbol ()
-  (interactive)
-  (call-interactively (if (use-rtags) 'rtags-find-symbol 'gtags-find-tag)))
-(defun tags-find-references ()
-  (interactive)
-  (call-interactively (if (use-rtags) 'rtags-find-references 'gtags-find-rtag)))
-(defun tags-pop-stack ()
-  (interactive)
-  (call-interactively (if (use-rtags) 'rtags-location-stack-back 'gtags-pop-stack)))
-(defun tags-find-file ()
-  (interactive)
-  (call-interactively (if (use-rtags t) 'rtags-find-file 'gtags-find-file)))
+  (defun use-rtags (&optional useFileManager)
+    (and (featurep 'rtags)
+         (cond ((not (gtags-get-rootpath)) t)
+               ((and (not (eq major-mode 'c++-mode))
+                     (not (eq major-mode 'c-mode)))
+                (rtags-has-filemanager))
+               (useFileManager (rtags-has-filemanager))
+               (t (rtags-is-indexed)))))
 
-(define-key c-mode-base-map (kbd "M-.") (function tags-find-symbol))
-(define-key c-mode-base-map (kbd "M-r") (function tags-find-references))
-(define-key c-mode-base-map (kbd "M-*") (function tags-pop-stack))
-(define-key c-mode-base-map (kbd "M-g f") (function tags-find-file))
-(define-key c-mode-base-map (kbd "M-g v") (function rtags-find-virtuals-at-point))
-(define-key c-mode-base-map (kbd "M-g n") (function rtags-next-match))
-(define-key c-mode-base-map (kbd "M-g p") (function rtags-previous-match))
+  (defun tags-find-symbol ()
+    (interactive)
+    (call-interactively (if (use-rtags) 'rtags-find-symbol 'gtags-find-tag)))
+  (defun tags-find-references ()
+    (interactive)
+    (call-interactively (if (use-rtags) 'rtags-find-references 'gtags-find-rtag)))
+  (defun tags-pop-stack ()
+    (interactive)
+    (call-interactively (if (use-rtags) 'rtags-location-stack-back 'gtags-pop-stack)))
+  (defun tags-find-file ()
+    (interactive)
+    (call-interactively (if (use-rtags t) 'rtags-find-file 'gtags-find-file)))
 
-(define-key global-map (kbd "M-.") (function tags-find-symbol))
-(define-key global-map (kbd "M-r") (function tags-find-references))
-(define-key global-map (kbd "M-*") (function tags-pop-stack))
-(define-key global-map (kbd "M-g f") (function tags-find-file))
-(define-key global-map (kbd "M-g v") (function rtags-find-virtuals-at-point))
-(define-key global-map (kbd "M-g n") (function rtags-next-match))
-(define-key global-map (kbd "M-g p") (function rtags-previous-match))
+  (add-hook 'c-mode-common-hook
+            (lambda ()
+              (define-key c-mode-base-map (kbd "M-.") (function tags-find-symbol))
+              (define-key c-mode-base-map (kbd "M-r") (function tags-find-references))
+              (define-key c-mode-base-map (kbd "M-,") (function tags-pop-stack))
+              (define-key c-mode-base-map (kbd "M-*") (function tags-pop-stack))
+              (define-key c-mode-base-map (kbd "M-g f") (function tags-find-file))
+              (define-key c-mode-base-map (kbd "M-g v") (function rtags-find-virtuals-at-point))
+              (define-key c-mode-base-map (kbd "M-g n") (function rtags-next-match))
+              (define-key c-mode-base-map (kbd "M-g p") (function rtags-previous-match))
+              )))
 
 ;; ----------------------------------------------------------------
 ;;  for SLIME
@@ -402,23 +404,26 @@
 (add-hook 'c-mode-common-hook 'vs-set-c-style)
 
 ;; auto detect header file
-(add-to-list 'auto-mode-alist '("\\.h$" . dummy-h-mode))
-(autoload 'dummy-h-mode "dummy-h-mode" "Dummy H mode" t)
+(use-package dummy-h-mode
+  :ensure t
+  :mode ("\\.h$" . dummy-h-mode))
 
 ;; ----------------------------------------------------------------
 ;; helm
 ;; ----------------------------------------------------------------
-(require 'helm)
-(require 'helm-config)
-
-;; key bindings
-(global-set-key (kbd "C-x C-f") 'helm-find-files)
-;(global-set-key (kbd "C-x b")   'helm-buffers-list)
-(global-set-key (kbd "C-x b") 'helm-for-files)
-(global-set-key (kbd "M-y")     'helm-show-kill-ring)
-(global-set-key (kbd "M-x")     'helm-M-x)
-
-(define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ; rebind tab to run persistent action
+(use-package helm
+  :init
+  :ensure t
+  :init
+  :bind (("C-x C-f" . helm-find-files)
+         ("C-x b" . helm-for-files)
+         ("M-y" . helm-show-kill-ring)
+         ("M-x" . helm-M-x)
+         :map helm-map
+         ("<tab>" . helm-execute-persistent-action) ; rebind tab to run persistent action
+         )
+  :config
+  (require 'helm-config))
 
 ;; ----------------------------------------------------------------
 ;; helm gtags
@@ -439,52 +444,57 @@
 ;; ----------------------------------------------------------------
 ;; yasnippet
 ;; ----------------------------------------------------------------
-(eval-after-load "yasnippet"
-  '(progn
-     ;; companyと競合するのでyasnippetのフィールド移動は "C-i" のみにする
-     (define-key yas-keymap (kbd "<tab>") nil)
-     (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
-     (yas-global-mode 1)))
-(require 'yasnippet)
-(require 'helm-c-yasnippet)
-(setq helm-yas-space-match-any-greedy t)
-(global-set-key (kbd "C-c y") 'helm-yas-complete)
-(push '("emacs.+/snippets/" . snippet-mode) auto-mode-alist)
-(yas-global-mode 1)
+(use-package yasnippet
+  :ensure t
+  :init
+  (use-package yasnippet-snippets
+    :ensure t)
+  :bind (:map yas-keymap
+              ("<tab>" . nil)           ;companyと競合するのでyasnippetのフィールド移動は "C-i" のみにする
+              )
+  :mode ("emacs.+/snippets/" . snippet-mode)
+  :config
+  (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
+  (yas-global-mode 1))
 
+(use-package helm-c-yasnippet
+  :ensure t
+  :init
+  (setq helm-yas-space-match-any-greedy t)
+  :bind (("C-c y" . 'helm-yas-complete)))
+  
 ;; ----------------------------------------------------------------
 ;; company
 ;; ----------------------------------------------------------------
-(when (locate-library "company")
-  (global-company-mode 1)
-  (global-set-key (kbd "C-M-i") 'company-complete)
+(use-package company
+  :ensure t
+  :init
   (setq company-idle-delay nil) ; 自動補完をしない
-  (define-key company-active-map (kbd "C-n") 'company-select-next)
-  (define-key company-active-map (kbd "C-p") 'company-select-previous)
-  (define-key company-search-map (kbd "C-n") 'company-select-next)
-  (define-key company-search-map (kbd "C-p") 'company-select-previous)
-  (define-key company-active-map (kbd "<tab>") 'company-complete-selection))
+  :bind (("C-M-i" . 'company-complete)
+         :map company-active-map
+         ("C-n" . 'company-select-next)
+         ("C-p" . 'company-select-previous)
+         ("<tab>" . 'company-complete-selection))
+  :config
+  (global-company-mode 1))
 
 ;; ----------------------------------------------------------------
 ;; irony
 ;; ----------------------------------------------------------------
-(require 'irony)
-(add-hook 'c++-mode-hook 'irony-mode)
-(add-hook 'c-mode-hook 'irony-mode)
-(add-hook 'objc-mode-hook 'irony-mode)
-;; replace the `completion-at-point' and `complete-symbol' bindings in
-;; irony-mode's buffers by irony-mode's asynchronous function
-(defun my-irony-mode-hook ()
-  (define-key irony-mode-map [remap completion-at-point]
-    'irony-completion-at-point-async)
-  (define-key irony-mode-map [remap complete-symbol]
-    'irony-completion-at-point-async))
-(add-hook 'irony-mode-hook 'my-irony-mode-hook)
-(add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
+(use-package irony
+  :ensure t
+  :commands (irony-mode)
+  :init
+  (add-hook 'c++-mode-hook 'irony-mode)
+  (add-hook 'c-mode-hook 'irony-mode)
+  (add-hook 'objc-mode-hook 'irony-mode)
+  (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
+  ;; Only needed on Windows
+  (when system-windows-p (setq w32-pipe-read-delay 0))
+  :bind ( :map irony-mode-map
+               ([remap completion-at-point] . 'irony-completion-at-point-async)
+               ([remap complete-symbol] .     'irony-completion-at-point-async)))
 
-;; Only needed on Windows
-(when system-windows-p
-  (setq w32-pipe-read-delay 0))
 
 ;; Example .clang_complete file: >
 ;;  -DDEBUG
@@ -497,22 +507,28 @@
 ;; ----------------------------------------------------------------
 ;; compamy irony
 ;; ----------------------------------------------------------------
-(eval-after-load 'company
-  '(add-to-list 'company-backends 'company-irony))
+(use-package company-irony
+  :ensure t
+  :init
+  (eval-after-load 'company
+    '(add-to-list 'company-backends 'company-irony)))
 
 ;; ----------------------------------------------------------------
 ;; company-irony-c-headers
 ;; ----------------------------------------------------------------
-(require 'company-irony-c-headers)
-;; Load with `irony-mode` as a grouped backend
-(eval-after-load 'company
-  '(add-to-list
-    'company-backends '(company-irony-c-headers company-irony)))
+(use-package company-irony-c-headers
+  :ensure t
+  :init
+  (eval-after-load 'company
+    '(add-to-list
+      'company-backends '(company-irony-c-headers company-irony))))
 
 ;; ----------------------------------------------------------------
 ;; irony eldoc
 ;; ----------------------------------------------------------------
-(add-hook 'irony-mode-hook 'irony-eldoc)
+(use-package irony-eldoc
+  :ensure t
+  :hook irony-mode)
 
 ;; ----------------------------------------------------------------
 ;; aspell
@@ -522,11 +538,6 @@
 (setenv "DICTIONARY" "en_US")
 (eval-after-load "ispell"
  '(add-to-list 'ispell-skip-region-alist '("[^\000-\377]+")))
-
-;; ----------------------------------------------------------------
-;; english/Japanese translator for programmers
-;; ----------------------------------------------------------------
-(require 'codic)
 
 ;; ----------------------------------------------------------------
 ;; eijiro
@@ -572,39 +583,44 @@
 
 (setq sdic-default-coding-system 'utf-8-unix)
 
-
-;; ----------------------------------------------------------------
-;; searchweb
-;; ----------------------------------------------------------------
-(require 'search-web)
-
 ;; ----------------------------------------------------------------
 ;; color-moccur  (ELPA)
 ;; ----------------------------------------------------------------
-(require 'color-moccur)
-(global-set-key (kbd "M-o") 'occur-by-moccur)
-(setq moccur-split-word t)
-
-;; ----------------------------------------------------------------
-;; moccur-edit
-;; ----------------------------------------------------------------
-(require 'moccur-edit)
+(use-package color-moccur
+  :ensure t
+  :defer t
+  :bind (("M-o" . occur-by-moccur))
+  :init
+  :config
+  (require 'moccur-edit))
 
 ;; ----------------------------------------------------------------
 ;; flycheck
 ;; ----------------------------------------------------------------
-(add-hook 'after-init-hook #'global-flycheck-mode)
+(use-package flycheck
+  :ensure t
+  :config
+  (global-flycheck-mode t))
 
 ;; ----------------------------------------------------------------
 ;; flycheck-irony
 ;; ----------------------------------------------------------------
-(eval-after-load "flycheck"
+(use-package flycheck-irony
+  :ensure t
+  :init
+  (eval-after-load 'flycheck
   '(progn
-     (when (locate-library "flycheck-irony")
-       (flycheck-irony-setup))))
-(with-eval-after-load 'flycheck
-  (require 'flycheck-clang-analyzer)
-  (flycheck-clang-analyzer-setup))
+     (flycheck-irony-setup)
+     (flycheck-add-next-checker 'irony 'c/c++-clang))))
+
+(use-package flycheck-clang-analyzer
+  :disabled                             ; rusticと愛性悪い
+  :ensure t
+  :init
+  (eval-after-load 'flycheck
+  '(progn
+     (flycheck-clang-analyzer-setup))))
+
 ;; ----------------------------------------------------------------
 ;; shell
 ;; ----------------------------------------------------------------
@@ -624,126 +640,124 @@
 ;; ----------------------------------------------------------------
 ;; migemo
 ;; ----------------------------------------------------------------
-(let ((_exec-path (executable-find "cmigemo")))
-  (when _exec-path
-    (let ((dict-path (replace-regexp-in-string ".exe" ""
-                                               (replace-regexp-in-string "/bin/cmigemo" "/share/migemo/utf-8/migemo-dict" _exec-path))))
+(use-package migemo
+  :if (executable-find "cmigemo")
+  :ensure t
+  :init
+  (let* ((_exec-path (replace-regexp-in-string "/bin/cmigemo" "/share/migemo/utf-8/migemo-dict" (executable-find "cmigemo")))
+         (dict-path (replace-regexp-in-string ".exe" "" _exec-path)))
+    (setq migemo-command "cmigemo")
+    (setq migemo-options '("-q" "--emacs"))
 
-      (require 'migemo)
-      (setq migemo-command "cmigemo")
-      (setq migemo-options '("-q" "--emacs"))
+    ;; Set your installed path
+    (setq migemo-dictionary dict-path)
 
-      ;; Set your installed path
-      (setq migemo-dictionary dict-path)
-
-      (setq migemo-user-dictionary nil)
-      (setq migemo-regex-dictionary nil)
-      (setq migemo-coding-system 'utf-8-unix)
-      (migemo-init)
-      ;; [migemo]isearch のとき IME を英数モードにする
-      (when system-darwin-p
-             (add-hook 'isearch-mode-hook 'mac-change-language-to-us)))))
+    (setq migemo-user-dictionary nil)
+    (setq migemo-regex-dictionary nil)
+    (setq migemo-coding-system 'utf-8-unix))
+  :config
+  (migemo-init)
+  ;; [migemo]isearch のとき IME を英数モードにする
+  ;;      (when system-darwin-p
+  ;;             (add-hook 'isearch-mode-hook 'mac-change-language-to-us)))))
+  )
 
 ;; ----------------------------------------------------------------
 ;; highlight symbol
 ;; ----------------------------------------------------------------
-(require 'highlight-symbol)
-;;; 1秒後自動ハイライトされるようになる
-(setq highlight-symbol-idle-delay 1.0)
-;;; 自動ハイライトをしたいならば
-(add-hook 'prog-mode-hook 'highlight-symbol-mode)
-;;; ソースコードにおいてM-p/M-nでシンボル間を移動
-(add-hook 'prog-mode-hook 'highlight-symbol-nav-mode)
-;;; ポイント位置のシンボルをハイライト
-(global-set-key (kbd "M-g h") 'highlight-symbol-at-point)
-
-(global-set-key (kbd "M-g q") 'highlight-symbol-query-replace)
-
-;; ----------------------------------------------------------------
-;; expand region
-;; ----------------------------------------------------------------
-(require 'expand-region)
-(global-set-key (kbd "C-,") 'er/expand-region)
-(global-set-key (kbd "C-M-,") 'er/contract-region)
+(use-package highlight-symbol
+  :defer t
+  :init
+  (add-hook 'prog-mode-hook 'highlight-symbol-mode)
+  (add-hook 'prog-mode-hook 'highlight-symbol-nav-mode) ; ソースコードにおいてM-p/M-nでシンボル間を移動
+  (setq highlight-symbol-idle-delay 1.0)  ;1秒後自動ハイライトされるようになる
+  :bind (("M-g h" . highlight-symbol-at-point)          ; ポイント位置のシンボルをハイライト
+         ("M-g q" . highlight-symbol-query-replace)))
 
 ;; ----------------------------------------------------------------
 ;; beacon
 ;; ----------------------------------------------------------------
-(beacon-mode 1)
+(use-package beacon
+  :ensure t
+  :init
+  (beacon-mode 1))
 
 ;; ----------------------------------------------------------------
 ;; scheme (gauche)
 ;; ----------------------------------------------------------------
-(autoload 'gauche-mode "gauche-mode" nil t)
-
-(setq auto-mode-alist (cons '("\\.scm$" . gauche-mode) auto-mode-alist))
-
-(setq scheme-program-name (executable-find "gosh"))
-
-(defun scheme-other-window ()
-  "Run scheme on other window"
-  (interactive)
-  (switch-to-buffer-other-window
-   (get-buffer-create "*scheme*"))
-  (run-scheme scheme-program-name))
-
-(global-set-key  "\C-cs" 'scheme-other-window)
-
-(setq file-coding-system-alist
+(use-package gauche-mode
+  :mode
+  (("\\.scm$" . gauche-mode))
+  :init
+  (setq scheme-program-name (executable-find "gosh"))
+  (setq file-coding-system-alist
       (cons '("gauche-refj\\.info.*\\'" utf-8 . utf-8)
             file-coding-system-alist))
+  (defun scheme-other-window ()
+    "Run scheme on other window"
+    (interactive)
+    (switch-to-buffer-other-window
+     (get-buffer-create "*scheme*"))
+    (run-scheme scheme-program-name))
+  :bind
+  (("\C-cs" . 'scheme-other-window)))
+
 ;; ----------------------------------------------------------------
 ;; kahua
 ;; ----------------------------------------------------------------
-(require 'kahua)
-(setq auto-mode-alist
-      (append '(("\\.kahua$" . kahua-mode)) auto-mode-alist))
-(setq kahua-site-bundle (expand-file-name "~/work/kahua/site"))
+(use-package kahua
+  :mode (("\\.kahua$" . kahua-mode))
+  :init (setq kahua-site-bundle (expand-file-name "~/work/kahua/site")))
 
-;; ----------------------------------------------------------------
-;; R
-;; ----------------------------------------------------------------
-;(require 'ess-site)
-
-;; (fset 'change-to-maxtry
-;;       [?\C-  ?\C-s tab ?\C-s ?\C-s ?\C-s return ?\C-w ?m ?a ?x ?t ?r ?y ?\( ?\" ?\C-s ?\C-s ?\C-b ?\" ?, ?\C-  ?\C-s ?\C-s ?\C-s return ?\C-w ?\" ?\C-s ?\C-s ?\C-b ?\" ?, ?1 ?0 ?\) ?\C-k ])
-
-;; (defun change-to-maxtry-region (top bottom)
-;;   (interactive "r")
-;;   (apply-macro-to-region-lines top bottom (symbol-function 'change-to-maxtry)))
-   
 ;; ----------------------------------------------------------------
 ;; google translate
 ;; ----------------------------------------------------------------
-(require 'google-translate)
-(require 'google-translate-default-ui)
+(use-package google-translate
+  :ensure t
+  :defer t
+  :commands (google-translate-translate)
+  :init
+  (defvar google-translate-english-chars "[:ascii:]"
+    "これらの文字が含まれているときは英語とみなす")
+  (defun google-translate-enja-or-jaen (&optional string)
+    "regionか現在位置の単語を翻訳する。C-u付きでquery指定も可能"
+    (interactive)
+    (setq string
+          (cond ((stringp string) string)
+                (current-prefix-arg
+                 (read-string "Google Translate: "))
+                ((use-region-p)
+                 (buffer-substring (region-beginning) (region-end)))
+                (t
+                 (thing-at-point 'word))))
+    (let* ((asciip (string-match
+                    (format "\\`[%s]+\\'" google-translate-english-chars)
+                    string)))
+      (run-at-time 0.1 nil 'deactivate-mark)
+      (google-translate-translate
+       (if asciip "en" "ja")
+       (if asciip "ja" "en")
+       string)))
+  :bind ("C-M-t". 'google-translate-enja-or-jaen)
+  :config
+  (require 'google-translate-default-ui)
+  (use-package popwin
+    :ensure t
+    :init
+    (push '("\*Google Translate\*" :height 0.5 :stick t) popwin:special-display-config)))
+    
+;; ----------------------------------------------------------------
+;; rust
+;; ----------------------------------------------------------------
+(use-package rustic
+  :ensure t
+  :defer t
+  :mode (("\\.rs$" . rustic-mode))
+  :config
+  (use-package lsp-mode
+    :ensure t))
 
-(defvar google-translate-english-chars "[:ascii:]"
-  "これらの文字が含まれているときは英語とみなす")
-(defun google-translate-enja-or-jaen (&optional string)
-  "regionか現在位置の単語を翻訳する。C-u付きでquery指定も可能"
-  (interactive)
-  (setq string
-        (cond ((stringp string) string)
-              (current-prefix-arg
-               (read-string "Google Translate: "))
-              ((use-region-p)
-               (buffer-substring (region-beginning) (region-end)))
-              (t
-               (thing-at-point 'word))))
-  (let* ((asciip (string-match
-                  (format "\\`[%s]+\\'" google-translate-english-chars)
-                  string)))
-    (run-at-time 0.1 nil 'deactivate-mark)
-    (google-translate-translate
-     (if asciip "en" "ja")
-     (if asciip "ja" "en")
-     string)))
-
-(require 'popwin)
-(push '("\*Google Translate\*" :height 0.5 :stick t) popwin:special-display-config)
-
-(global-set-key (kbd "C-M-t") 'google-translate-enja-or-jaen)
+;; ----------------------------------------------------------------
 
 (put 'narrow-to-region 'disabled nil)
 
@@ -755,4 +769,4 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (irony-eldoc flycheck-clang-analyzer wgrep-ag slime search-web popwin migemo highlight-symbol helm-gtags helm-c-yasnippet google-translate flycheck-irony expand-region ess dummy-h-mode company-irony-c-headers company-irony color-moccur codic beacon auto-highlight-symbol auto-complete anything ag))))
+    (atom-one-dark-theme use-package yasnippet-snippets google-translate popwin flycheck-clang-analyzer helm-ag irony-eldoc wgrep-ag slime migemo highlight-symbol helm-gtags helm-c-yasnippet flycheck-irony ess dummy-h-mode company-irony-c-headers company-irony color-moccur beacon auto-highlight-symbol auto-complete ag))))

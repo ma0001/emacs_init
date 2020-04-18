@@ -758,6 +758,15 @@
     :ensure t))
 
 ;; ----------------------------------------------------------------
+;; hiwin
+;; ----------------------------------------------------------------
+(use-package hiwin
+  :ensure t
+  :config
+  (hiwin-activate)
+  (set-face-background 'hiwin-face "gray80")) ;; 非アクティブウィンドウの背景色を設定
+
+;; ----------------------------------------------------------------
 
 (put 'narrow-to-region 'disabled nil)
 
@@ -769,4 +778,4 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (atom-one-dark-theme use-package yasnippet-snippets google-translate popwin flycheck-clang-analyzer helm-ag irony-eldoc wgrep-ag slime migemo highlight-symbol helm-gtags helm-c-yasnippet flycheck-irony ess dummy-h-mode company-irony-c-headers company-irony color-moccur beacon auto-highlight-symbol auto-complete ag))))
+    (hiwin atom-one-dark-theme use-package yasnippet-snippets google-translate popwin flycheck-clang-analyzer helm-ag irony-eldoc wgrep-ag slime migemo highlight-symbol helm-gtags helm-c-yasnippet flycheck-irony ess dummy-h-mode company-irony-c-headers company-irony color-moccur beacon auto-highlight-symbol auto-complete ag))))

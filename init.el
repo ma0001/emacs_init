@@ -755,6 +755,8 @@
   :mode (("\\.rs$" . rustic-mode))
   :config
   (use-package lsp-mode
+    :ensure t)
+  (use-package racer
     :ensure t))
 
 ;; ----------------------------------------------------------------

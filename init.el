@@ -59,60 +59,7 @@
 ;  (mac-set-input-method-parameter "com.google.inputmethod.Japanese.Roman" `cursor-color "blue")
   ;; ミニバッファを開いたときに英字にする（閉じてもモードは戻らない）
   ;;  (add-hook 'minibuffer-setup-hook 'mac-change-language-to-us))
-  (mac-auto-ascii-mode 1))
-
- (system-windows-p
-  ;; モードラインの表示文字列
-  (setq-default w32-ime-mode-line-state-indicator "[Aa] ")
-  (setq w32-ime-mode-line-state-indicator-list '("[Aa]" "[あ]" "[Aa]"))
-  ;; IME初期化
-  (w32-ime-initialize)
-  ;; デフォルトIME
-  (setq default-input-method "W32-IME")
-  ;; IME変更
-  (global-set-key (kbd "C-\\") 'toggle-input-method)
-  ;; 漢字/変換キー入力時のエラーメッセージ抑止
-  (global-set-key (kbd "<M-kanji>") 'ignore)
-  (global-set-key (kbd "<kanji>") 'ignore)
-  ;; minibufferのアクティブ時、IMEを無効化
-  (add-hook 'minibuffer-setup-hook
-            (lambda ()
-              (deactivate-input-method)))
-  (wrap-function-to-control-ime 'y-or-n-p nil nil)
-  (wrap-function-to-control-ime 'map-y-or-n-p nil nil)
-  (wrap-function-to-control-ime 'read-char nil nil)
-  ;; IME無効／有効時のカーソルカラー定義
-  (unless (facep 'cursor-ime-off)
-    (make-face 'cursor-ime-off)
-    (set-face-attribute 'cursor-ime-off nil
-                        :background "DarkRed" :foreground "White")
-    )
-  (unless (facep 'cursor-ime-on)
-    (make-face 'cursor-ime-on)
-    (set-face-attribute 'cursor-ime-on nil
-                        :background "DarkGreen" :foreground "White")
-    )
-
-  ;; IME無効／有効時のカーソルカラー設定
-  (advice-add 'ime-force-on
-              :before (lambda (&rest args)
-                        (if (facep 'cursor-ime-on)
-                            (let ( (fg (face-attribute 'cursor-ime-on :foreground))
-                                   (bg (face-attribute 'cursor-ime-on :background)) )
-                              (set-face-attribute 'cursor nil :foreground fg :background bg) )
-                          )
-                        ))
-  (advice-add 'ime-force-off
-              :before (lambda (&rest args)
-                        (if (facep 'cursor-ime-off)
-                            (let ( (fg (face-attribute 'cursor-ime-off :foreground))
-                                   (bg (face-attribute 'cursor-ime-off :background)) )
-                              (set-face-attribute 'cursor nil :foreground fg :background bg) )
-                          )
-                        ))
-  ;; バッファ切り替え時の状態引継ぎ設定（有効：t、無効：nil）
-  (setq w32-ime-buffer-switch-p t)
-))
+  (mac-auto-ascii-mode 1)))
 
 ;; ----------------------------------------------------------------
 ;; font set
@@ -249,7 +196,46 @@
 ;;(setq url-proxy-services '(("http" . "proxy-odc.intra.daifuku.co.jp:8080")))
 (setq gnutls-algorithm-priority "normal:-vers-tls1.3")
 
+(cond ((getenv "HTTP_PROXY")
+       (let* ((url_ (url-generic-parse-url (getenv "HTTP_PROXY")))
+              (auth_ (if (and (url-user url_) (url-password url_) )
+                         (base64-encode-string
+                          (format "%s:%s" (url-user url_) (url-password url_)))
+                       nil))
+              (host_ (format "%s:%s" (url-host url_) (url-portspec url_))))
+
+         (setq url-proxy-services
+           (list (cons "no_proxy"  "^\\(localhost\\|10.*\\)")
+                 (cons "http" host_)
+                 (cons "https" host_)))
+         (if auth_
+             (setq url-http-proxy-basic-auth-storage
+               (list (list host_ (cons "/" auth_)))))
+         )))
+
 (package-initialize)
+
+;;----- mse proxy hack
+;; (eval-after-load 'url-http
+;;   '(defun url-https-proxy-connect (connection)
+;;      (setq url-http-after-change-function 'url-https-proxy-after-change-function)
+;;      (process-send-string connection (format (concat "CONNECT %s:%d HTTP/1.1\r\n"
+;;                                                      "Host: %s:%d\r\n"
+;;                                                      "User-Agent: %s\r\n"
+;;                                                      "Proxy-Authorization: Basic %s\r\n"
+;;                                                      "\r\n")
+;;                                              (url-host url-current-object)
+;;                                              (or (url-port url-current-object)
+;;                                                  url-https-default-port)
+;;                                              (url-host url-current-object)
+;;                                              (or (url-port url-current-object)
+;;                                                  url-https-default-port)
+;;                                              (url-http--user-agent-default-string)
+;;                                              (let* ((url_ (url-generic-parse-url (getenv "HTTP_PROXY")))
+;;                                                     (auth_ (if (and (url-user url_) (url-password url_) )
+;;                                                                (base64-encode-string
+;;                                                                 (format "%s:%s" (url-user url_) (url-password url_))))))
+;;                                                auth_)))))
 
 ;; ----------------------------------------------------------------
 ;; line number
@@ -315,6 +301,24 @@
 (global-set-key "\C-c)" 'lightning-close-paren)
 (global-set-key "\C-c]" 'lightning-close-paren)
 (global-set-key "\C-c}" 'lightning-close-paren)
+
+;; ----------------------------------------------------------------
+;; ワード削除はkill-bufferに入れない
+;; ----------------------------------------------------------------
+(defun my-kill-word (arg)
+  "Kill characters forward until encountering the end of a word.
+With argument ARG, do this that many times."
+  (interactive "p")
+  (delete-region (point) (progn (forward-word arg) (point))))
+
+(defun my-backward-kill-word (arg)
+  "Kill characters backward until encountering the beginning of a word.
+With argument ARG, do this that many times."
+  (interactive "p")
+  (my-kill-word (- arg)))
+
+(global-set-key "\M-d" 'my-kill-word)
+(global-set-key [M-backspace] 'my-backward-kill-word)
 
 ;; ----------------------------------------------------------------
 ;; gtags, rtags
@@ -780,6 +784,43 @@
   :config
   (hiwin-activate)
   (set-face-background 'hiwin-face "gray80")) ;; 非アクティブウィンドウの背景色を設定
+
+;; ----------------------------------------------------------------
+;; tr-ime
+;; ----------------------------------------------------------------
+(use-package tr-ime
+  :if system-windows-p
+  :ensure t
+  :config
+  (tr-ime-advanced-install)
+  (when (fboundp 'w32-ime-initialize)
+    ;; モードラインの表示文字列
+    (setq-default w32-ime-mode-line-state-indicator "[Aa] ")
+    (setq w32-ime-mode-line-state-indicator-list '("[Aa]" "[あ]" "[Aa]"))
+    ;; デフォルトIME
+    (setq default-input-method "W32-IME")
+    ;; IME初期化
+    (w32-ime-initialize)
+    ;; IME変更
+    (global-set-key (kbd "C-\\") 'toggle-input-method)
+    (global-set-key "\M- " 'toggle-input-method)
+    ;; 漢字/変換キー入力時のエラーメッセージ抑止
+    (global-set-key (kbd "<M-kanji>") 'ignore)
+    (global-set-key (kbd "<kanji>") 'ignore)
+    ;; minibufferのアクティブ時、IMEを無効化
+    (add-hook 'minibuffer-setup-hook
+              (lambda ()
+                (deactivate-input-method)))
+    (wrap-function-to-control-ime 'universal-argument t nil)
+    (wrap-function-to-control-ime 'read-string nil nil)
+    (wrap-function-to-control-ime 'read-char nil nil)
+    (wrap-function-to-control-ime 'read-from-minibuffer nil nil)
+    (wrap-function-to-control-ime 'y-or-n-p nil nil)
+    (wrap-function-to-control-ime 'yes-or-no-p nil nil)
+    (wrap-function-to-control-ime 'map-y-or-n-p nil nil)
+    ;; バッファ切り替え時の状態引継ぎ設定（有効：t、無効：nil）
+    (setq w32-ime-buffer-switch-p t)
+    ))
 
 ;; ----------------------------------------------------------------
 

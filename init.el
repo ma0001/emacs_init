@@ -245,8 +245,10 @@
 ;; ----------------------------------------------------------------
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
-;(add-to-list 'package-archives  '("marmalade" . "http://marmalade-repo.org/packages/"))
-;(setq url-proxy-services '(("http" . "proxy-odc.intra.daifuku.co.jp:8080")))
+;;(add-to-list 'package-archives  '("marmalade" . "http://marmalade-repo.org/packages/"))
+;;(setq url-proxy-services '(("http" . "proxy-odc.intra.daifuku.co.jp:8080")))
+(setq gnutls-algorithm-priority "normal:-vers-tls1.3")
+
 (package-initialize)
 
 ;; ----------------------------------------------------------------
@@ -531,6 +533,16 @@
   :hook irony-mode)
 
 ;; ----------------------------------------------------------------
+;; company tabnine
+;; ----------------------------------------------------------------
+(use-package company-tabnine
+  :ensure t
+  :init
+  (eval-after-load 'company
+    '(add-to-list
+      'company-backends 'company-tabnine)))
+
+;; ----------------------------------------------------------------
 ;; aspell
 ;; ----------------------------------------------------------------
 ;; you may need "lang en_US" in ~/.aspell.conf 
@@ -763,6 +775,7 @@
 ;; hiwin
 ;; ----------------------------------------------------------------
 (use-package hiwin
+  :disabled
   :ensure t
   :config
   (hiwin-activate)
@@ -779,5 +792,6 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   (quote
-    (hiwin atom-one-dark-theme use-package yasnippet-snippets google-translate popwin flycheck-clang-analyzer helm-ag irony-eldoc wgrep-ag slime migemo highlight-symbol helm-gtags helm-c-yasnippet flycheck-irony ess dummy-h-mode company-irony-c-headers company-irony color-moccur beacon auto-highlight-symbol auto-complete ag))))
+   '(company-tabnine racer rustic lsp-mode hiwin atom-one-dark-theme use-package yasnippet-snippets google-translate popwin flycheck-clang-analyzer helm-ag irony-eldoc wgrep-ag slime migemo highlight-symbol helm-gtags helm-c-yasnippet flycheck-irony ess dummy-h-mode company-irony-c-headers company-irony color-moccur beacon auto-highlight-symbol auto-complete ag)))
+
+

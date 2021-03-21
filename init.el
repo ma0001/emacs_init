@@ -9,6 +9,9 @@
 (setq system-darwin-p (eq system-type 'darwin)
       system-windows-p (or (eq system-type 'windows-nt)
                            (eq system-type 'cygwin)))
+
+(setq company-use-ccls (executable-find "ccls"))
+
 ;;
 (set-language-environment 'Japanese)
 (prefer-coding-system 'utf-8-unix)
@@ -332,7 +335,8 @@ With argument ARG, do this that many times."
          (elisp-path (replace-regexp-in-string "/bin/" "/share/" _exec-path)))
     (add-to-list 'load-path elisp-path))
   (setq gtags-path-style 'relative)
-  (add-hook 'c-mode-common-hook '(lambda() (gtags-mode 1)))
+  (add-hook 'c-mode-common-hook '(lambda() (if (not company-use-ccls)   ;; cclsが入っているならlspのタグジャンプを使う
+                                               (gtags-mode 1))))
   (setq-default gtags-ignore-case nil)
   (setq gtags-auto-update 1)            ; gtags セーブでアップデート
   (defun my-select-tag-other-window ()
@@ -352,7 +356,8 @@ With argument ARG, do this that many times."
 
 ;; ---------------- rtags
 (use-package rtags
-  :if (and (executable-find "rdm")
+  :if (and (not company-use-ccls)
+           (executable-find "rdm")
            (executable-find "rc"))
   :init
   (setq rtags-display-result-backend 'helm)
@@ -488,6 +493,7 @@ With argument ARG, do this that many times."
 ;; irony
 ;; ----------------------------------------------------------------
 (use-package irony
+  :if (not company-use-ccls)
   :ensure t
   :commands (irony-mode)
   :init
@@ -514,6 +520,7 @@ With argument ARG, do this that many times."
 ;; compamy irony
 ;; ----------------------------------------------------------------
 (use-package company-irony
+  :if (not company-use-ccls)
   :ensure t
   :init
   (eval-after-load 'company
@@ -523,6 +530,7 @@ With argument ARG, do this that many times."
 ;; company-irony-c-headers
 ;; ----------------------------------------------------------------
 (use-package company-irony-c-headers
+  :if (not company-use-ccls)
   :ensure t
   :init
   (eval-after-load 'company
@@ -533,6 +541,7 @@ With argument ARG, do this that many times."
 ;; irony eldoc
 ;; ----------------------------------------------------------------
 (use-package irony-eldoc
+  :if (not company-use-ccls)
   :ensure t
   :hook irony-mode)
 
@@ -540,6 +549,7 @@ With argument ARG, do this that many times."
 ;; company tabnine
 ;; ----------------------------------------------------------------
 (use-package company-tabnine
+  :disabled
   :ensure t
   :init
   (eval-after-load 'company
@@ -622,6 +632,7 @@ With argument ARG, do this that many times."
 ;; flycheck-irony
 ;; ----------------------------------------------------------------
 (use-package flycheck-irony
+  :disabled
   :ensure t
   :init
   (eval-after-load 'flycheck
@@ -770,8 +781,6 @@ With argument ARG, do this that many times."
   :defer t
   :mode (("\\.rs$" . rustic-mode))
   :config
-  (use-package lsp-mode
-    :ensure t)
   (use-package racer
     :ensure t))
 
@@ -821,6 +830,73 @@ With argument ARG, do this that many times."
     ;; バッファ切り替え時の状態引継ぎ設定（有効：t、無効：nil）
     (setq w32-ime-buffer-switch-p t)
     ))
+
+;; ----------------------------------------------------------------
+;; lsp-ui
+;; ----------------------------------------------------------------
+(use-package lsp-mode
+  :ensure t
+  :custom
+  (lsp-enable-snippet t)
+  (lsp-enable-indentation nil)
+  (lsp-enable-on-type-formatting nil)
+  (lsp-prefer-flymake nil)
+  (lsp-document-sync-method 2)
+  (lsp-inhibit-message t)
+  (lsp-message-project-root-warning t)
+  (create-lockfiles nil)
+  (lsp-prefer-capf  t)
+  :hook (prog-major-mode . lsp-prog-major-mode-enable))
+
+(use-package lsp-ui
+  :ensure t
+  :after lsp-mode
+  :custom
+  ;; lsp-ui-doc
+  (lsp-ui-doc-enable t)
+  (lsp-ui-doc-header t)
+  (lsp-ui-doc-include-signature t)
+  (lsp-ui-doc-position 'top)
+  (lsp-ui-doc-max-width  60)
+  (lsp-ui-doc-max-height 20)
+  (lsp-ui-doc-use-childframe t)
+  (lsp-ui-doc-use-webkit nil)
+  
+  ;; lsp-ui-flycheck
+  (lsp-ui-flycheck-enable t)
+  
+  ;; lsp-ui-sideline
+  (lsp-ui-sideline-enable t)
+  (lsp-ui-sideline-ignore-duplicate t)
+  (lsp-ui-sideline-show-symbol t)
+  (lsp-ui-sideline-show-hover t)
+  (lsp-ui-sideline-show-diagnostics t)
+  (lsp-ui-sideline-show-code-actions t)
+  
+  ;; lsp-ui-imenu
+  (lsp-ui-imenu-enable nil)
+  (lsp-ui-imenu-kind-position 'top)
+  
+  ;; lsp-ui-peek
+  (lsp-ui-peek-enable t)
+  (lsp-ui-peek-always-show t)
+  (lsp-ui-peek-peek-height 30)
+  (lsp-ui-peek-list-width 30)
+  (lsp-ui-peek-fontify 'always)
+  
+  :hook   (lsp-mode . lsp-ui-mode)
+  :bind ( :map lsp-ui-mode-map
+               ([remap xref-find-definitions] . 'lsp-ui-peek-find-definitions)
+               ([remap xref-find-references] . 'lsp-ui-peek-find-references)))
+
+(use-package ccls
+  :if company-use-ccls
+  :ensure t
+  :custom ((ccls-sem-highlight-method 'font-lock)
+           (ccls-use-default-rainbow-sem-highlight))
+  :hook ((c-mode c++-mode objc-mode) .
+         (lambda () (require 'ccls) (lsp))))
+
 
 ;; ----------------------------------------------------------------
 

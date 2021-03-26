@@ -776,13 +776,18 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; rust
 ;; ----------------------------------------------------------------
-(use-package rustic
+(use-package rust-mode
   :ensure t
-  :defer t
-  :mode (("\\.rs$" . rustic-mode))
-  :config
-  (use-package racer
-    :ensure t))
+  :after lsp-mode
+  :custom
+  (rust-format-on-save t)
+  (lsp-rust-server 'rust-analyzer)
+  :hook
+  (rust-mode . lsp))
+
+(use-package cargo
+  :ensure t
+  :hook (rust-mode . cargo-minor-mode))
 
 ;; ----------------------------------------------------------------
 ;; hiwin
@@ -846,7 +851,8 @@ With argument ARG, do this that many times."
   (lsp-message-project-root-warning t)
   (create-lockfiles nil)
   (lsp-prefer-capf  t)
-  :hook (prog-major-mode . lsp-prog-major-mode-enable))
+  :hook
+  (prog-major-mode . lsp-prog-major-mode-enable))
 
 (use-package lsp-ui
   :ensure t

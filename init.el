@@ -9,8 +9,16 @@
 (setq system-darwin-p (eq system-type 'darwin)
       system-windows-p (or (eq system-type 'windows-nt)
                            (eq system-type 'cygwin)))
+(if system-darwin-p
+    (setq exec-path (cons (file-name-directory (shell-command-to-string "xcrun --find clang"))
+                          exec-path)))
+                           
 
-(setq company-use-ccls (executable-find "ccls"))
+(setq c-mode-company-use-lsp (cond ((executable-find "clangd")
+                                    'clangd)
+                                   ((executable-find "ccls")
+                                    'ccls)
+                                   (t nil)))
 
 ;;
 (set-language-environment 'Japanese)
@@ -335,7 +343,7 @@ With argument ARG, do this that many times."
          (elisp-path (replace-regexp-in-string "/bin/" "/share/" _exec-path)))
     (add-to-list 'load-path elisp-path))
   (setq gtags-path-style 'relative)
-  (add-hook 'c-mode-common-hook '(lambda() (if (not company-use-ccls)   ;; cclsが入っているならlspのタグジャンプを使う
+  (add-hook 'c-mode-common-hook '(lambda() (if (not c-mode-company-use-lsp)   ;; cclsが入っているならlspのタグジャンプを使う
                                                (gtags-mode 1))))
   (setq-default gtags-ignore-case nil)
   (setq gtags-auto-update 1)            ; gtags セーブでアップデート
@@ -356,7 +364,7 @@ With argument ARG, do this that many times."
 
 ;; ---------------- rtags
 (use-package rtags
-  :if (and (not company-use-ccls)
+  :if (and (not c-mode-company-use-lsp)
            (executable-find "rdm")
            (executable-find "rc"))
   :init
@@ -493,7 +501,7 @@ With argument ARG, do this that many times."
 ;; irony
 ;; ----------------------------------------------------------------
 (use-package irony
-  :if (not company-use-ccls)
+  :if (not c-mode-company-use-lsp)
   :ensure t
   :commands (irony-mode)
   :init
@@ -520,7 +528,7 @@ With argument ARG, do this that many times."
 ;; compamy irony
 ;; ----------------------------------------------------------------
 (use-package company-irony
-  :if (not company-use-ccls)
+  :if (not c-mode-company-use-lsp)
   :ensure t
   :init
   (eval-after-load 'company
@@ -530,7 +538,7 @@ With argument ARG, do this that many times."
 ;; company-irony-c-headers
 ;; ----------------------------------------------------------------
 (use-package company-irony-c-headers
-  :if (not company-use-ccls)
+  :if (not c-mode-company-use-lsp)
   :ensure t
   :init
   (eval-after-load 'company
@@ -541,7 +549,7 @@ With argument ARG, do this that many times."
 ;; irony eldoc
 ;; ----------------------------------------------------------------
 (use-package irony-eldoc
-  :if (not company-use-ccls)
+  :if (not c-mode-company-use-lsp)
   :ensure t
   :hook irony-mode)
 
@@ -693,7 +701,7 @@ With argument ARG, do this that many times."
 ;; highlight symbol
 ;; ----------------------------------------------------------------
 (use-package highlight-symbol
-  :defer t
+  :ensure t
   :init
   (add-hook 'prog-mode-hook 'highlight-symbol-mode)
   (add-hook 'prog-mode-hook 'highlight-symbol-nav-mode) ; ソースコードにおいてM-p/M-nでシンボル間を移動
@@ -851,8 +859,16 @@ With argument ARG, do this that many times."
   (lsp-message-project-root-warning t)
   (create-lockfiles nil)
   (lsp-prefer-capf  t)
+  :config
+  (cond ((eq c-mode-company-use-lsp 'clangd)
+         (setq lsp-clients-clangd-executable (executable-find "clangd"))
+         (setq lsp-disabled-clients (list 'ccls)))
+        ((eq c-mode-company-use-lsp 'ccls)
+         (setq lsp-disabled-clients (list 'clangd))))
   :hook
-  (prog-major-mode . lsp-prog-major-mode-enable))
+  (prog-major-mode . lsp-prog-major-mode-enable)
+  ((c-mode c++-mode objc-mode) . lsp))
+
 
 (use-package lsp-ui
   :ensure t
@@ -896,12 +912,26 @@ With argument ARG, do this that many times."
                ([remap xref-find-references] . 'lsp-ui-peek-find-references)))
 
 (use-package ccls
-  :if company-use-ccls
+  :if (eq c-mode-company-use-lsp 'ccls)
   :ensure t
   :custom ((ccls-sem-highlight-method 'font-lock)
            (ccls-use-default-rainbow-sem-highlight))
-  :hook ((c-mode c++-mode objc-mode) .
-         (lambda () (require 'ccls) (lsp))))
+  :hook
+  ((c-mode c++-mode objc-mode) . lsp))
+
+
+;; ----------------------------------------------------------------
+;; swift
+;; ----------------------------------------------------------------
+(use-package lsp-sourcekit
+  :ensure t
+  :after lsp-mode
+  :config
+  (setq lsp-sourcekit-executable (string-trim (shell-command-to-string "xcrun --find sourcekit-lsp"))))
+
+(use-package swift-mode
+  :ensure t
+  :hook (swift-mode . (lambda () (lsp))))
 
 
 ;; ----------------------------------------------------------------
@@ -915,6 +945,6 @@ With argument ARG, do this that many times."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(company-tabnine racer rustic lsp-mode hiwin atom-one-dark-theme use-package yasnippet-snippets google-translate popwin flycheck-clang-analyzer helm-ag irony-eldoc wgrep-ag slime migemo highlight-symbol helm-gtags helm-c-yasnippet flycheck-irony ess dummy-h-mode company-irony-c-headers company-irony color-moccur beacon auto-highlight-symbol auto-complete ag)))
+   '(swift-mode lsp-sourcekit company-tabnine racer rustic lsp-mode hiwin atom-one-dark-theme use-package yasnippet-snippets google-translate popwin flycheck-clang-analyzer helm-ag irony-eldoc wgrep-ag slime migemo helm-gtags helm-c-yasnippet flycheck-irony ess dummy-h-mode company-irony-c-headers company-irony color-moccur beacon auto-complete ag)))
 
 

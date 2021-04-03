@@ -92,13 +92,13 @@ Successive execution moves that close paren across following expressions."
   (interactive "P")
   (if arg
       (self-insert-command (prefix-numeric-value arg))
-    (if (/= (char-syntax last-input-char) ?\( )
+    (if (/= (char-syntax last-input-event) ?\( )
         (self-insert-command 1)
       (let ((echo-keystrokes 0)                 ;inhibit echo on read-char
-            (op-char last-input-char)
+            (op-char last-input-event)
 ;;            (cl-char (% (/ (aref (syntax-table) last-input-char) 256) 256))
                                                 ;こんな計算でいいのか?(;^^)
-            (cl-char (opposite_paren last-input-char))
+            (cl-char (opposite_paren last-input-event))
             op-pos cl-pos ch)
         (insert op-char cl-char)
         (backward-char 1)
@@ -115,7 +115,7 @@ Successive execution moves that close paren across following expressions."
           (sit-for 1)
           (setq cl-pos (point))
           (goto-char op-pos))
-        (setq unread-command-char ch)))))
+        (setq unread-command-events (list ch))))))
 
 (defun lightning-close-paren (&optional arg)
   "Insert character or ARG characters. If its syntax class is open paren
@@ -148,7 +148,7 @@ Successive execution moves that close paren across following expressions."
           (sit-for 1)
           (setq op-pos (point))
           (goto-char cl-pos))
-        (setq unread-command-char ch)))))
+        (setq unread-command-events (list ch))))))
 
 ;;;設定例
 ; 各種プログラム言語用

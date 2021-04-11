@@ -25,43 +25,6 @@
 (prefer-coding-system 'utf-8-unix)
 
 ;; ----------------------------------------------------------------
-;; theme
-;; ----------------------------------------------------------------
-(use-package doom-themes
-  :ensure t
-  :config
-  ;; Global settings (defaults)
-  (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
-        doom-themes-enable-italic t) ; if nil, italics is universally disabled
-  (load-theme 'doom-one t)
-
-  ;; Enable flashing mode-line on errors
-  (doom-themes-visual-bell-config)
-  
-  ;; Enable custom neotree theme (all-the-icons must be installed!)
-  (doom-themes-neotree-config)
-  ;; or for treemacs users
-  (setq doom-themes-treemacs-theme "doom-colors") ; use the colorful treemacs theme
-  (doom-themes-treemacs-config)
-  
-  ;; Corrects (and improves) org-mode's native fontification.
-  (doom-themes-org-config))
-
-;;(add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
-;;(load-theme 'wheat t)
-;(load-theme 'gnupack-dark t)
-
-;; 選択バッファをわかりやすく表示
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(mode-line ((t (:foreground "black" :background "orange"))))
- '(mode-line-buffer-id ((t (:foreground nil :background nil))))
- '(mode-line-inactive ((t (:foreground "gray50" :background "gray85")))))
-
-;; ----------------------------------------------------------------
 ;; keybord bindings
 ;; ----------------------------------------------------------------
 (cond
@@ -269,6 +232,47 @@
 ;;                                                auth_)))))
 
 ;; ----------------------------------------------------------------
+;; theme
+;; ----------------------------------------------------------------
+(use-package doom-themes
+  :ensure t
+  :init
+  (custom-set-faces
+   '(yas-field-highlight-face ((t (:inherit match :inverse-video t)))))
+  :config
+  ;; Global settings (defaults)
+  (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
+        doom-themes-enable-italic t) ; if nil, italics is universally disabled
+  ;;;(load-theme 'doom-nord-light t)
+  (load-theme 'doom-vibrant t)
+
+  ;; Enable flashing mode-line on errors
+  (doom-themes-visual-bell-config)
+  
+  ;; Enable custom neotree theme (all-the-icons must be installed!)
+  (doom-themes-neotree-config)
+  ;; or for treemacs users
+  (setq doom-themes-treemacs-theme "doom-colors") ; use the colorful treemacs theme
+  (doom-themes-treemacs-config)
+  
+  ;; Corrects (and improves) org-mode's native fontification.
+  (doom-themes-org-config))
+
+;;(add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
+;;(load-theme 'wheat t)
+;(load-theme 'gnupack-dark t)
+
+;; 選択バッファをわかりやすく表示
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(mode-line ((t (:foreground "black" :background "orange"))))
+ '(mode-line-buffer-id ((t (:foreground nil :background nil))))
+ '(mode-line-inactive ((t (:foreground "gray50" :background "gray85")))))
+
+;; ----------------------------------------------------------------
 ;; line number
 ;; ----------------------------------------------------------------
 (use-package linum
@@ -441,11 +445,6 @@ With argument ARG, do this that many times."
 (autoload 'vs-set-c-style "vs-set-c-style")
 
 (add-hook 'c-mode-common-hook 'vs-set-c-style)
-
-;; auto detect header file
-(use-package dummy-h-mode
-  :ensure t
-  :mode ("\\.h$" . dummy-h-mode))
 
 ;; ----------------------------------------------------------------
 ;; helm

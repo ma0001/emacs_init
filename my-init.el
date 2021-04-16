@@ -25,6 +25,19 @@
 (prefer-coding-system 'utf-8-unix)
 
 ;; ----------------------------------------------------------------
+;; utility function
+;; ----------------------------------------------------------------
+  ;;; dirから親ディレクトリ方向へ向かってfilenameを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す。
+(defun search-file-for-updir(dir filename)
+  (cond
+   ((file-exists-p (expand-file-name filename dir))
+    dir)
+   ((equal (expand-file-name "/") dir)
+    nil)
+   (t
+    (search-file-for-updir (file-name-directory (directory-file-name dir)) filename))))
+
+;; ----------------------------------------------------------------
 ;; keybord bindings
 ;; ----------------------------------------------------------------
 (cond
@@ -367,16 +380,16 @@ With argument ARG, do this that many times."
          (elisp-path (replace-regexp-in-string "/bin/" "/share/" _exec-path)))
     (add-to-list 'load-path elisp-path))
   (setq gtags-path-style 'relative)
-  (add-hook 'c-mode-common-hook '(lambda() (if (not c-mode-company-use-lsp)   ;; cclsが入っているならlspのタグジャンプを使う
+  (add-hook 'c-mode-common-hook '(lambda() (if (search-file-for-updir  buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
                                                (gtags-mode 1))))
   (setq-default gtags-ignore-case nil)
   (setq gtags-auto-update 1)            ; gtags セーブでアップデート
   (defun my-select-tag-other-window ()
-      (save-excursion (gtags-select-tag-other-window)))
+    (save-excursion (gtags-select-tag-other-window)))
   ;; 追加のtag search path
   (setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
   :bind ( :map gtags-mode-map
-               ("M-r" . gtags-find-rtag)
+               ("M-?" . gtags-find-rtag)
                ("M-." . gtags-find-tag)
                ("M-g s" . gtags-find-symbol)
                ("M-g g" . gtags-find-pattern)

@@ -971,4 +971,28 @@ With argument ARG, do this that many times."
   :hook (swift-mode . (lambda () (lsp))))
 
 
+;; ----------------------------------------------------------------
+;; C-mode stuct enum の中ではコメントはdoxgenの後述コメントを使う
+;; ----------------------------------------------------------------
+(defun in-defun-p()
+  (save-excursion
+    (beginning-of-defun)
+    (let ((word (thing-at-point 'word t)))
+      (if (or (equal word "struct")
+              (equal word "enum"))
+          t
+        nil))))
 
+(defun my-ins-comment(arg)
+  (interactive "*P")
+  (if (and (not (use-region-p))
+          (in-defun-p))
+      (let ((comment-start "///< ")
+            (comment-start-skip "///< ")
+            (comment-end   ""))
+        (comment-dwim arg))
+    (comment-dwim arg)))
+
+
+    
+  

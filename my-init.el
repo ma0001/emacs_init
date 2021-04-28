@@ -994,5 +994,9 @@ With argument ARG, do this that many times."
     (comment-dwim arg)))
 
 
+(add-hook 'c-mode-common-hook
+      (lambda()
+         ;; cc-mode内で定義されるキーバインド
+         (define-key c-mode-base-map "\M-;" 'my-ins-comment)))
     
   

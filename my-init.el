@@ -20,6 +20,10 @@
                                     'ccls)
                                    (t nil)))
 
+(setq gtags-mode (cond ((executable-find "gtags")
+                                    'helm) ; 'gnu or 'helm
+                       (t nil)))
+
 ;;
 (set-language-environment 'Japanese)
 (prefer-coding-system 'utf-8-unix)
@@ -372,7 +376,7 @@ With argument ARG, do this that many times."
 ;; gtags, rtags
 ;; ----------------------------------------------------------------
 (use-package gtags
-  :if (executable-find "gtags")
+  :if (eq gtags-mode 'gnu)
   :commands (gtags-mode)
   :init
   ;; to use gtags.el that shipped with gtags
@@ -397,7 +401,30 @@ With argument ARG, do this that many times."
                ("M-," . gtags-pop-stack)
                ("M-*" . gtags-pop-stack)
                ("C-j" . my-select-tag-other-window)))
-  
+
+(use-package helm-gtags
+  :if (eq gtags-mode 'helm)
+  :ensure t
+  :commands (helm-gtags-mode)
+  :init
+  ;; to use gtags.el that shipped with gtags
+  (add-hook 'c-mode-common-hook '(lambda() (if (search-file-for-updir  buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
+                                               (helm-gtags-mode 1))))
+  :custom
+  (helm-gtags-ignore-case nil)
+  (helm-gtags-auto-update 1)            ; gtags セーブでアップデート
+  ;; 追加のtag search path
+  (setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
+  :bind ( :map helm-gtags-mode-map
+               ("M-?" . helm-gtags-find-rtag)
+               ("M-." . helm-gtags-find-tag)
+               ("M-g s" . helm-gtags-find-symbol)
+               ("M-g g" . helm-gtags-find-pattern)
+               ("M-g f" . helm-gtags-find-file)
+               ("M-," . helm-gtags-pop-stack)
+               ("M-*" . helm-gtags-pop-stack)
+               ("C-j" . helm-gtags-select-tag-other-window)))
+
 
 ;; ---------------- rtags
 (use-package rtags
@@ -913,6 +940,8 @@ With argument ARG, do this that many times."
   :custom
   ;; lsp-ui-doc
   (lsp-ui-doc-enable t)
+  (lsp-ui-doc-show-with-mouse t)
+  (lsp-ui-doc-show-with-cursor nil)
   (lsp-ui-doc-header t)
   (lsp-ui-doc-include-signature t)
   (lsp-ui-doc-position 'top)

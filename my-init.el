@@ -407,12 +407,13 @@ With argument ARG, do this that many times."
   :ensure t
   :commands (helm-gtags-mode)
   :init
-  ;; to use gtags.el that shipped with gtags
   (add-hook 'c-mode-common-hook '(lambda() (if (search-file-for-updir  buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
                                                (helm-gtags-mode 1))))
   :custom
   (helm-gtags-ignore-case nil)
   (helm-gtags-auto-update 1)            ; gtags セーブでアップデート
+  (helm-gtags-path-style 'relative)
+
   ;; 追加のtag search path
   (setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
   :bind ( :map helm-gtags-mode-map
@@ -420,7 +421,7 @@ With argument ARG, do this that many times."
                ("M-." . helm-gtags-find-tag)
                ("M-g s" . helm-gtags-find-symbol)
                ("M-g g" . helm-gtags-find-pattern)
-               ("M-g f" . helm-gtags-find-file)
+               ("M-g f" . helm-gtags-find-files)
                ("M-," . helm-gtags-pop-stack)
                ("M-*" . helm-gtags-pop-stack)
                ("C-j" . helm-gtags-select-tag-other-window)))

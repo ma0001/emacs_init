@@ -475,10 +475,12 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;;  for SLIME
 ;; ----------------------------------------------------------------
-(let ((sbcl-path (executable-find "sbcl")))
-  (when sbcl-path
-    (setq inferior-lisp-program sbcl-path)
-    (setq slime-contribs '(slime-repl slime-asdf slime-fancy slime-banner))))
+(use-package slime
+  :if (executable-find "sbcl")
+  :ensure t
+  :config
+  (setq inferior-lisp-program (executable-find "sbcl"))
+  (setq slime-contribs '(slime-repl slime-asdf slime-fancy slime-banner)))
 
 ;; ----------------------------------------------------------------
 ;; c++ c mode
@@ -503,22 +505,6 @@ With argument ARG, do this that many times."
          )
   :config
   (require 'helm-config))
-
-;; ----------------------------------------------------------------
-;; helm gtags
-;; ----------------------------------------------------------------
-;;(require 'helm-gtags)
-
-;; (add-hook 'c-mode-hook 'helm-gtags-mode)
-;; (add-hook 'c++-mode-hook 'helm-gtags-mode)
-
-;; (add-hook 'helm-gtags-mode-hook
-;;           '(lambda ()
-;;              (local-set-key (kbd "M-.") 'helm-gtags-find-tag)
-;;              (local-set-key (kbd "M-r") 'helm-gtags-find-rtag)
-;;              (local-set-key (kbd "M-s") 'helm-gtags-find-symbol)
-;;              (local-set-key (kbd "M-*") 'helm-gtags-pop-stack)
-;;              (local-set-key (kbd "M-g g") 'helm-gtags-find-pattern)))
 
 ;; ----------------------------------------------------------------
 ;; yasnippet

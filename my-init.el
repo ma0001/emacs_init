@@ -289,6 +289,9 @@
  '(mode-line-buffer-id ((t (:foreground nil :background nil))))
  '(mode-line-inactive ((t (:foreground "gray50" :background "gray85")))))
 
+(use-package all-the-icons
+  :ensure t
+  )
 ;; ----------------------------------------------------------------
 ;; line number
 ;; ----------------------------------------------------------------
@@ -1015,4 +1018,18 @@ With argument ARG, do this that many times."
          ;; cc-mode内で定義されるキーバインド
          (define-key c-mode-base-map "\M-;" 'my-ins-comment)))
     
+;; ----------------------------------------------------------------
+;; DAP
+;; ----------------------------------------------------------------
+(use-package dap-mode
+  :ensure t
+  :after lsp-mode
+  :custom
+  (dap-lldb-debug-program `("/usr/local/Cellar/llvm/12.0.0_1/bin/lldb-vscode"))
+  (dap-lldb-debugged-program-function '(lambda() (read-file-name "Select file to debug.")))
+  :config
+  (setq dap-auto-configure-features '(sessions locals controls tooltip))
+  (require 'dap-lldb))
   
+
+

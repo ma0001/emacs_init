@@ -41,6 +41,26 @@
    (t
     (search-file-for-updir (file-name-directory (directory-file-name dir)) filename))))
 
+  ;;; dirから子ディレクトリ方向へ向かってfilenameを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す。
+(defun search-file-for-downdir(dir filename)
+  (catch 'found
+    (message dir)
+    (let ((files (reverse (directory-files-and-attributes dir nil nil nil))))
+      (dolist (file files)
+        (let* ((dirp (eq t (car (cdr file))))     ;directory?
+               (path (expand-file-name (car file) dir))
+               (fname (car file)))
+          (cond
+           ((or (equal fname ".") (equal fname ".."))
+            nil)
+           (dirp
+            (if-let ((res (search-file-for-downdir path  filename))) (throw 'found res)))
+           ((equal fname filename)
+            (message "hit %s" dir)
+            (throw 'found dir))
+           (t
+            nil)))))))
+
 ;; ----------------------------------------------------------------
 ;; keybord bindings
 ;; ----------------------------------------------------------------
@@ -1025,7 +1045,9 @@ With argument ARG, do this that many times."
   :ensure t
   :after lsp-mode
   :custom
-  (dap-lldb-debug-program `("/usr/local/Cellar/llvm/12.0.0_1/bin/lldb-vscode"))
+  (dap-lldb-debug-program (list (or (if-let ((dir (search-file-for-downdir "/usr/local/Cellar/llvm" "lldb-vscode")))
+                                        (expand-file-name "lldb-vscode" dir))
+                                    (executable-find "lldb-vscode"))))
   (dap-lldb-debugged-program-function '(lambda() (read-file-name "Select file to debug.")))
   :config
   (setq dap-auto-configure-features '(sessions locals controls tooltip))

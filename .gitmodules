@@ -1,0 +1,3 @@
+[submodule "git-complete"]
+	path = git-complete
+	url = https://github.com/zk-phi/git-complete.git

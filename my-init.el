@@ -2,6 +2,7 @@
 
 ;;; code:
 (add-to-list 'load-path "~/.emacs.d/elisp")
+(add-to-list 'load-path "~/.emacs.d/git-complete")
 
 ;; ----------------------------------------------------------------
 ;; Determine system 
@@ -625,6 +626,7 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; company tabnine
 ;; ----------------------------------------------------------------
+;; to install binary M-x company-tabnine-install-binary
 (use-package company-tabnine
   :disabled
   :ensure t
@@ -1054,4 +1056,10 @@ With argument ARG, do this that many times."
   (require 'dap-lldb))
   
 
+
+;; ----------------------------------------------------------------
+;; git complete
+;; ----------------------------------------------------------------
+(require 'git-complete)
+(global-set-key (kbd "<S-tab>") 'git-complete)
 

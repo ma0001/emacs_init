@@ -21,9 +21,7 @@
                                     'ccls)
                                    (t nil)))
 
-(setq gtags-mode (cond ((executable-find "gtags")
-                                    'helm) ; 'gnu or 'helm
-                       (t nil)))
+(setq narrowing-system 'ivy)
 
 ;;
 (set-language-environment 'Japanese)
@@ -400,7 +398,7 @@ With argument ARG, do this that many times."
 ;; gtags, rtags
 ;; ----------------------------------------------------------------
 (use-package gtags
-  :if (eq gtags-mode 'gnu)
+  :disabled
   :commands (gtags-mode)
   :init
   ;; to use gtags.el that shipped with gtags
@@ -427,7 +425,7 @@ With argument ARG, do this that many times."
                ("C-j" . my-select-tag-other-window)))
 
 (use-package helm-gtags
-  :if (eq gtags-mode 'helm)
+  :if (eq narrowing-system 'helm)
   :ensure t
   :commands (helm-gtags-mode)
   :init
@@ -449,6 +447,29 @@ With argument ARG, do this that many times."
                ("M-," . helm-gtags-pop-stack)
                ("M-*" . helm-gtags-pop-stack)
                ("C-j" . helm-gtags-select-tag-other-window)))
+
+(use-package counsel-gtags
+  :if (eq narrowing-system 'ivy)
+  :ensure t
+  :commands (counsel-gtags-mode)
+  :init
+  (add-hook 'c-mode-common-hook '(lambda() (if (search-file-for-updir  buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
+                                               (counsel-gtags-mode 1))))
+  :custom
+  (counsel-gtags-ignore-case nil)
+  (counsel-gtags-update-interval-second nil)            ; gtags セーブでアップデート
+  (counsel-gtags-path-style 'relative)
+
+  ;; 追加のtag search path
+  (setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
+  :bind ( :map counsel-gtags-mode-map
+               ("M-?" . counsel-gtags-find-reference)
+               ("M-." . counsel-gtags-find-definition)
+               ("M-g s" . counsel-gtags-find-symbol)
+               ("M-g f" . counsel-gtags-find-file)
+               ("M-," . counsel-gtags-go-backward)
+               ("M-*" . counsel-gtags-go-backward)))
+
 
 
 ;; ---------------- rtags
@@ -517,7 +538,7 @@ With argument ARG, do this that many times."
 ;; helm
 ;; ----------------------------------------------------------------
 (use-package helm
-  :init
+  :if (eq narrowing-system 'helm)
   :ensure t
   :init
   :bind (("C-x C-f" . helm-find-files)
@@ -529,6 +550,22 @@ With argument ARG, do this that many times."
          )
   :config
   (require 'helm-config))
+
+;; ----------------------------------------------------------------
+;; ivy
+;; ----------------------------------------------------------------
+(use-package counsel
+  :if (eq narrowing-system 'ivy)
+  :ensure t
+  :init
+  :bind (("C-x C-f" . counsel-recentf)
+         ("C-x b" . counsel-ibuffer)
+         ("M-y" . counsel-yank-pop)
+         ("M-x" . counsel-M-x))
+  :config
+   ;; `ivy-switch-buffer' (C-x b) のリストに recent files と bookmark を含める．
+  (setq ivy-use-virtual-buffers t)
+  )
 
 ;; ----------------------------------------------------------------
 ;; yasnippet
@@ -547,11 +584,18 @@ With argument ARG, do this that many times."
   (yas-global-mode 1))
 
 (use-package helm-c-yasnippet
+  :if (eq narrowing-system 'helm)
   :ensure t
   :init
   (setq helm-yas-space-match-any-greedy t)
   :bind (("C-c y" . 'helm-yas-complete)))
-  
+
+(use-package ivy-yasnippet
+  :if (eq narrowing-system 'ivy)
+  :ensure t
+  :init
+  :bind (("C-c y" . 'ivy-yasnippet)))
+
 ;; ----------------------------------------------------------------
 ;; company
 ;; ----------------------------------------------------------------
@@ -1060,6 +1104,11 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; git complete
 ;; ----------------------------------------------------------------
-(require 'git-complete)
-(global-set-key (kbd "<S-tab>") 'git-complete)
+;(require 'git-complete)
+;(global-set-key (kbd "<S-tab>") 'git-complete)
+
+(use-package eacl
+  :ensure t
+  :bind ("<S-tab>". 'eacl-complete-line))
+
 

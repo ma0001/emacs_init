@@ -21,7 +21,7 @@
                                     'ccls)
                                    (t nil)))
 
-(setq narrowing-system 'ivy)
+(setq narrowing-system 'helm)
 
 ;;
 (set-language-environment 'Japanese)
@@ -42,23 +42,24 @@
 
   ;;; dirから子ディレクトリ方向へ向かってfilenameを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す。
 (defun search-file-for-downdir(dir filename)
-  (catch 'found
-    (message dir)
-    (let ((files (reverse (directory-files-and-attributes dir nil nil nil))))
-      (dolist (file files)
-        (let* ((dirp (eq t (car (cdr file))))     ;directory?
-               (path (expand-file-name (car file) dir))
-               (fname (car file)))
-          (cond
-           ((or (equal fname ".") (equal fname ".."))
-            nil)
-           (dirp
-            (if-let ((res (search-file-for-downdir path  filename))) (throw 'found res)))
-           ((equal fname filename)
-            (message "hit %s" dir)
-            (throw 'found dir))
-           (t
-            nil)))))))
+  (if (file-directory-p dir)
+      (catch 'found
+        (message dir)
+        (let ((files (reverse (directory-files-and-attributes dir nil nil nil))))
+          (dolist (file files)
+            (let* ((dirp (eq t (car (cdr file))))     ;directory?
+                   (path (expand-file-name (car file) dir))
+                   (fname (car file)))
+              (cond
+               ((or (equal fname ".") (equal fname ".."))
+                nil)
+               (dirp
+                (if-let ((res (search-file-for-downdir path  filename))) (throw 'found res)))
+               ((equal fname filename)
+                (message "hit %s" dir)
+                (throw 'found dir))
+               (t
+                nil))))))))
 
 ;; ----------------------------------------------------------------
 ;; keybord bindings
@@ -1104,10 +1105,11 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; git complete
 ;; ----------------------------------------------------------------
-;(require 'git-complete)
-;(global-set-key (kbd "<S-tab>") 'git-complete)
+(require 'git-complete)
+(global-set-key (kbd "<S-tab>") 'git-complete)
 
 (use-package eacl
+  :disabled
   :ensure t
   :bind ("<S-tab>". 'eacl-complete-line))
 

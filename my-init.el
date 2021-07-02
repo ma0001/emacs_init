@@ -980,6 +980,7 @@ With argument ARG, do this that many times."
   (lsp-message-project-root-warning t)
   (create-lockfiles nil)
   (lsp-prefer-capf  t)
+  (lsp-headerline-breadcrumb-enable nil)
   :config
   (cond ((eq c-mode-company-use-lsp 'clangd)
          (setq lsp-clients-clangd-executable (executable-find "clangd"))

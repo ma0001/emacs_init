@@ -1105,8 +1105,8 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; git complete
 ;; ----------------------------------------------------------------
-(require 'git-complete)
-(global-set-key (kbd "<S-tab>") 'git-complete)
+;;(require 'git-complete)
+;;(global-set-key (kbd "<S-tab>") 'git-complete)
 
 (use-package eacl
   :disabled
@@ -1114,3 +1114,10 @@ With argument ARG, do this that many times."
   :bind ("<S-tab>". 'eacl-complete-line))
 
 
+;; ----------------------------------------------------------------
+;;  git grep
+;; ----------------------------------------------------------------
+(use-package helm-git-grep
+  :if (eq narrowing-system 'helm)
+  :ensure t
+  :bind ("<S-tab>". 'helm-git-grep))

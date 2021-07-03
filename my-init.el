@@ -1109,7 +1109,10 @@ With argument ARG, do this that many times."
 (use-package helm-git-grep
   :if (eq narrowing-system 'helm)
   :ensure t
-  :bind ("<S-tab>". 'helm-git-grep))
+  :bind ("<S-tab>". (lambda ()
+                      (interactive)                 
+                      (xref-push-marker-stack)
+                      (helm-git-grep))))
 
 
 ;; ----------------------------------------------------------------

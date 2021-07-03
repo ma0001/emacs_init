@@ -1104,21 +1104,34 @@ With argument ARG, do this that many times."
 
 
 ;; ----------------------------------------------------------------
-;; git complete
-;; ----------------------------------------------------------------
-;;(require 'git-complete)
-;;(global-set-key (kbd "<S-tab>") 'git-complete)
-
-(use-package eacl
-  :disabled
-  :ensure t
-  :bind ("<S-tab>". 'eacl-complete-line))
-
-
-;; ----------------------------------------------------------------
 ;;  git grep
 ;; ----------------------------------------------------------------
 (use-package helm-git-grep
   :if (eq narrowing-system 'helm)
   :ensure t
   :bind ("<S-tab>". 'helm-git-grep))
+
+
+;; ----------------------------------------------------------------
+;;  ace jump
+;; ----------------------------------------------------------------
+(use-package ace-jump-mode
+  :ensure t
+  :bind
+  ("C-c SPC" . (lambda (&optional prefix)
+                 (interactive "p")
+                 (xref-push-marker-stack)
+                 (ace-jump-mode prefix))))
+
+;; ----------------------------------------------------------------
+;;  swiper
+;; ----------------------------------------------------------------
+(use-package swiper
+  :ensure t
+  :bind
+  ("C-c s" . (lambda ()
+                 (interactive)                 
+                 (xref-push-marker-stack)
+                 (swiper))))
+
+

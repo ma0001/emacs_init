@@ -7,8 +7,8 @@
 ;; ----------------------------------------------------------------
 ;; utility function
 ;; ----------------------------------------------------------------
-  ;;; dirから親ディレクトリ方向へ向かってfilenameを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す。
 (defun search-file-for-updir(dir filename)
+  "DIRから親ディレクトリ方向へ向かってFILENAMEを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す。"
   (cond
    ((file-exists-p (expand-file-name filename dir))
     dir)
@@ -17,8 +17,8 @@
    (t
     (search-file-for-updir (file-name-directory (directory-file-name dir)) filename))))
 
-  ;;; dirから子ディレクトリ方向へ向かってfilenameを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す。
 (defun search-file-for-downdir(dir filename)
+  "DIRから子ディレクトリ方向へ向かってFILENAMEを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す。"
   (if (file-directory-p dir)
       (catch 'found
         (message dir)
@@ -39,7 +39,7 @@
                 nil))))))))
 
 ;; ----------------------------------------------------------------
-;; Determine system 
+;; Determine system
 ;; ----------------------------------------------------------------
 (setq system-darwin-p (eq system-type 'darwin)
       system-windows-p (or (eq system-type 'windows-nt)
@@ -1134,7 +1134,7 @@ With argument ARG, do this that many times."
   ("C-s" . (lambda ()
              (interactive)                 
              (xref-push-marker-stack)
-             (swiper))))
+             (swiper-isearch-thing-at-point))))
 
 
 

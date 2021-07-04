@@ -1,31 +1,8 @@
-;;; -*- mode: emacs-lisp; coding: utf-8; indent-tabs-mode: nil -*-
+;; -*- mode: emacs-lisp; coding: utf-8; indent-tabs-mode: nil -*-
 
 ;;; code:
 (add-to-list 'load-path "~/.emacs.d/elisp")
 (add-to-list 'load-path "~/.emacs.d/git-complete")
-
-;; ----------------------------------------------------------------
-;; Determine system 
-;; ----------------------------------------------------------------
-(setq system-darwin-p (eq system-type 'darwin)
-      system-windows-p (or (eq system-type 'windows-nt)
-                           (eq system-type 'cygwin)))
-(if system-darwin-p
-    (setq exec-path (cons (file-name-directory (shell-command-to-string "xcrun --find clang"))
-                          exec-path)))
-                           
-
-(setq c-mode-company-use-lsp (cond ((executable-find "clangd")
-                                    'clangd)
-                                   ((executable-find "ccls")
-                                    'ccls)
-                                   (t nil)))
-
-(setq narrowing-system 'helm)
-
-;;
-(set-language-environment 'Japanese)
-(prefer-coding-system 'utf-8-unix)
 
 ;; ----------------------------------------------------------------
 ;; utility function
@@ -60,6 +37,29 @@
                 (throw 'found dir))
                (t
                 nil))))))))
+
+;; ----------------------------------------------------------------
+;; Determine system 
+;; ----------------------------------------------------------------
+(setq system-darwin-p (eq system-type 'darwin)
+      system-windows-p (or (eq system-type 'windows-nt)
+                           (eq system-type 'cygwin)))
+(if system-darwin-p
+    (if-let ((dir (search-file-for-downdir "/usr/local/Cellar/llvm" "clangd")))
+        (setq exec-path (cons dir exec-path))))
+                           
+
+(setq c-mode-company-use-lsp (cond ((executable-find "clangd")
+                                    'clangd)
+                                   ((executable-find "ccls")
+                                    'ccls)
+                                   (t nil)))
+
+(setq narrowing-system 'helm)
+
+;;
+(set-language-environment 'Japanese)
+(prefer-coding-system 'utf-8-unix)
 
 ;; ----------------------------------------------------------------
 ;; keybord bindings
@@ -1090,12 +1090,11 @@ With argument ARG, do this that many times."
 ;; DAP
 ;; ----------------------------------------------------------------
 (use-package dap-mode
+  :if (executable-find "lldb-vscode")
   :ensure t
   :after lsp-mode
   :custom
-  (dap-lldb-debug-program (list (or (if-let ((dir (search-file-for-downdir "/usr/local/Cellar/llvm" "lldb-vscode")))
-                                        (expand-file-name "lldb-vscode" dir))
-                                    (executable-find "lldb-vscode"))))
+  (dap-lldb-debug-program (list (executable-find "lldb-vscode")))
   (dap-lldb-debugged-program-function '(lambda() (read-file-name "Select file to debug.")))
   :config
   (setq dap-auto-configure-features '(sessions locals controls tooltip))
@@ -1109,7 +1108,7 @@ With argument ARG, do this that many times."
 (use-package helm-git-grep
   :if (eq narrowing-system 'helm)
   :ensure t
-  :bind ("<S-tab>". (lambda ()
+  :bind ("C-c s". (lambda ()
                       (interactive)                 
                       (xref-push-marker-stack)
                       (helm-git-grep))))
@@ -1132,9 +1131,11 @@ With argument ARG, do this that many times."
 (use-package swiper
   :ensure t
   :bind
-  ("C-c s" . (lambda ()
-                 (interactive)                 
-                 (xref-push-marker-stack)
-                 (swiper))))
+  ("C-s" . (lambda ()
+             (interactive)                 
+             (xref-push-marker-stack)
+             (swiper))))
+
+
 
 

@@ -573,7 +573,52 @@ With argument ARG, do this that many times."
 
 (use-package ivy-rich
   :ensure t
-  :config (ivy-rich-mode 1))
+  :config
+  (ivy-rich-mode 1)
+  (setq ivy-rich-path-style 'abbrev)
+
+;; use buffer-file-name and list-buffers-directory instead of default-directory
+  ;; so that special buffers, e.g. *scratch* don't get a directory (we return nil in those cases)
+  (defun ivy-rich--switch-buffer-directory (candidate)
+    "Return directory of file visited by buffer named CANDIDATE, or nil if no file."
+    (let* ((buffer (get-buffer candidate))
+           (fn (buffer-file-name buffer)))
+      ;; if valid filename, i.e. buffer visiting file:
+      (if fn
+          ;; return containing directory
+          (directory-file-name fn)
+        ;; else if mode explicitly offering list-buffers-directory, return that; else nil.
+        ;; buffers that don't explicitly visit files, but would like to show a filename,
+        ;; e.g. magit or dired, set the list-buffers-directory variable
+        (buffer-local-value 'list-buffers-directory buffer))))
+  ;; override ivy-rich project root finding to use FFIP or to skip completely
+  (defun ivy-rich-switch-buffer-root (candidate)
+    ;; 1. changed let* to when-let*; if our directory func above returns nil,
+    ;;    we don't want to try and find project root
+    (when-let* ((dir (ivy-rich--switch-buffer-directory candidate)))
+      (unless (or (and (file-remote-p dir)
+                       (not ivy-rich-parse-remote-buffer))
+                  ;; Workaround for `browse-url-emacs' buffers , it changes
+                  ;; `default-directory' to "http://" (#25)
+                  (string-match "https?://" dir))
+        (cond
+         ;; 2. replace the project-root-finding
+         ;; a. add FFIP for projectile-less project-root finding (on my setup much faster) ...
+         ((require 'find-file-in-project nil t)
+          (let ((default-directory dir))
+            (ffip-project-root)))
+         ;; b. OR disable project-root-finding altogether
+         (t "")
+         ((bound-and-true-p projectile-mode)
+          (let ((project (or (ivy-rich--local-values
+                              candidate 'projectile-project-root)
+                             (projectile-project-root dir))))
+            (unless (string= project "-")
+              project)))
+         ((require 'project nil t)
+          (when-let ((project (project-current nil dir)))
+            (car (project-roots project))))
+         )))))
 
 ;; ----------------------------------------------------------------
 ;; yasnippet

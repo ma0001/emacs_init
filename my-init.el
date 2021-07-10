@@ -55,7 +55,7 @@
                                     'ccls)
                                    (t nil)))
 
-(setq narrowing-system 'helm)
+(setq narrowing-system 'ivy)
 
 ;;
 (set-language-environment 'Japanese)
@@ -562,13 +562,14 @@ With argument ARG, do this that many times."
   :if (eq narrowing-system 'ivy)
   :ensure t
   :init
-  :bind (("C-x C-f" . counsel-recentf)
-         ("C-x b" . counsel-ibuffer)
+  :bind (("C-x C-f" . counsel-find-file)
+         ("C-x b" . ivy-switch-buffer)
          ("M-y" . counsel-yank-pop)
          ("M-x" . counsel-M-x))
   :config
    ;; `ivy-switch-buffer' (C-x b) のリストに recent files と bookmark を含める．
   (setq ivy-use-virtual-buffers t)
+  (setq ivy-virtual-abbreviate 'full)
   )
 
 ;; ----------------------------------------------------------------
@@ -1112,34 +1113,58 @@ With argument ARG, do this that many times."
   :if (eq narrowing-system 'helm)
   :ensure t
   :bind ( "<S-tab>" . (lambda ()
-                      (interactive)                 
-                      (xref-push-marker-stack)
-                      (helm-git-grep))))
+                        (interactive)                 
+                        (xref-push-marker-stack)
+                        (helm-git-grep))))
 
-
-;; ----------------------------------------------------------------
-;;  ace jump
-;; ----------------------------------------------------------------
-(use-package ace-jump-mode
-  :ensure t
-  :bind
-  ("C-c SPC" . (lambda (&optional prefix)
-                 (interactive "p")
-                 (xref-push-marker-stack)
-                 (ace-jump-mode prefix))))
 
 ;; ----------------------------------------------------------------
 ;;  swiper
 ;; ----------------------------------------------------------------
 (use-package swiper
   :ensure t
+  :config
+  (defun my-swiper-all-from-swiper ()
+    " Intended to be bound in `swiper-map'."
+    (interactive)
+    (ivy-exit-with-action
+     (lambda (_)
+       (swiper-all ivy-text))))
+
+  (defun my-counsel-rg-from-swiper-all ()
+    " Intended to be bound in `swiper-map'."
+    (interactive)
+    (ivy-exit-with-action
+     (lambda (_)
+       (counsel-rg ivy-text))))
+
+  (defun my-swiper-from-counsel-rg ()
+    " Intended to be bound in `swiper-map'."
+    (interactive)
+    (ivy-exit-with-action
+     (lambda (_)
+       (swiper ivy-text))))
+
   :bind
   ("C-c s" . (lambda (&optional prefix)
                (interactive "P")
                (xref-push-marker-stack)
                (if prefix
                    (swiper-all-thing-at-point)
-                 (swiper-isearch-thing-at-point)))))
+                 (swiper-isearch-thing-at-point))))
+  ("C-s" . (lambda (&optional regexp-p no-recursive-edit)
+             (interactive "P\np")
+             (xref-push-marker-stack)
+             (isearch-forward regexp-p no-recursive-edit)))
+  (:map isearch-mode-map
+        ("C-j" . swiper-from-isearch))
+  (:map swiper-map
+        ("C-j" . my-swiper-all-from-swiper))
+  (:map swiper-all-map
+        ("C-j" . my-counsel-rg-from-swiper-all))
+  (:map counsel-ag-map
+        ("C-j" . my-swiper-from-counsel-rg)))
+
 
 ;; ----------------------------------------------------------------
 ;;  camelcase snakecase

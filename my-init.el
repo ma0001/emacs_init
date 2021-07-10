@@ -59,7 +59,10 @@
 
 ;;
 (set-language-environment 'Japanese)
-(prefer-coding-system 'utf-8-unix)
+(if system-windows-p
+    (prefer-coding-system 'utf-8-with-signature-dos)
+  (prefer-coding-system 'utf-8-unix))
+  
 
 ;; ----------------------------------------------------------------
 ;; keybord bindings
@@ -1108,7 +1111,7 @@ With argument ARG, do this that many times."
 (use-package helm-git-grep
   :if (eq narrowing-system 'helm)
   :ensure t
-  :bind ("C-c s". (lambda ()
+  :bind ( "<S-tab>" . (lambda ()
                       (interactive)                 
                       (xref-push-marker-stack)
                       (helm-git-grep))))
@@ -1131,11 +1134,45 @@ With argument ARG, do this that many times."
 (use-package swiper
   :ensure t
   :bind
-  ("C-s" . (lambda ()
-             (interactive)                 
-             (xref-push-marker-stack)
-             (swiper-isearch-thing-at-point))))
+  ("C-c s" . (lambda (&optional prefix)
+               (interactive "P")
+               (xref-push-marker-stack)
+               (if prefix
+                   (swiper-all-thing-at-point)
+                 (swiper-isearch-thing-at-point)))))
 
+;; ----------------------------------------------------------------
+;;  camelcase snakecase
+;; ----------------------------------------------------------------
+(use-package string-inflection
+  :ensure t
+  :config
+  (defun my-string-inflection-cycle-auto ()
+    "foo_bar => FOO_BAR => FooBar => fooBar => foo_bar"
+    (interactive)
+    (string-inflection-insert
+     (let ((str (string-inflection-get-current-word)))
+       (cond
+        ;; foo => FOO
+        ((string-inflection-word-p str)
+         (string-inflection-upcase-function str))
+        ;; foo_bar => FOO_BAR
+        ((string-inflection-underscore-p str)
+         (string-inflection-upcase-function str))
+        ;; FOO_BAR => FooBar
+        ((string-inflection-upcase-p str)
+         (string-inflection-pascal-case-function str))
+        ;; FooBar => fooBar
+        ;; Foo    => foo
+        ((string-inflection-pascal-case-p str)
+         (string-inflection-camelcase-function str))
+        ;; foo-bar => foo_bar
+        (t
+         (string-inflection-underscore-function str))))))
+  :bind
+  ("M-u" . my-string-inflection-cycle-auto))
+  
+  
 
 
 

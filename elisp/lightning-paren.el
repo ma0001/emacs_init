@@ -44,7 +44,7 @@ Successive execution capitalizes the symbol. Triple execution downcases it."
            (point)))
 
 ;;;設定例
-(global-set-key "\M-u" 'upcase-previous-symbol)
+;;(global-set-key "\M-u" 'upcase-previous-symbol)
 ;;;
 ;;;［その2］
 ;;; lightning-open-paren:

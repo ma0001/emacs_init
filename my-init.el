@@ -561,7 +561,6 @@ With argument ARG, do this that many times."
 (use-package counsel
   :if (eq narrowing-system 'ivy)
   :ensure t
-  :init
   :bind (("C-x C-f" . counsel-find-file)
          ("C-x b" . ivy-switch-buffer)
          ("M-y" . counsel-yank-pop)
@@ -571,6 +570,10 @@ With argument ARG, do this that many times."
   (setq ivy-use-virtual-buffers t)
   (setq ivy-virtual-abbreviate 'full)
   )
+
+(use-package ivy-rich
+  :ensure t
+  :config (ivy-rich-mode 1))
 
 ;; ----------------------------------------------------------------
 ;; yasnippet

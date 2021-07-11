@@ -634,6 +634,7 @@ With argument ARG, do this that many times."
   :mode ("emacs.+/snippets/" . snippet-mode)
   :config
   (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
+  (setq yas-key-syntaxes '(yas-try-key-from-whitespace "w_.()" "w_." "w_"))
   (yas-global-mode 1))
 
 (use-package helm-c-yasnippet
@@ -1167,6 +1168,17 @@ With argument ARG, do this that many times."
 
 
 ;; ----------------------------------------------------------------
+;;  ace jump
+;; ----------------------------------------------------------------
+(use-package ace-jump-mode
+  :ensure t
+  :bind
+  ("C-c SPC" . (lambda (&optional prefix)
+                 (interactive "p")
+                 (xref-push-marker-stack)
+                 (ace-jump-mode prefix))))
+
+;; ----------------------------------------------------------------
 ;;  swiper
 ;; ----------------------------------------------------------------
 (use-package swiper
@@ -1192,6 +1204,8 @@ With argument ARG, do this that many times."
     (ivy-exit-with-action
      (lambda (_)
        (swiper ivy-text))))
+
+  (setq ivy-re-builders-alist '((t . ivy--regex-ignore-order)))
 
   :bind
   ("C-c s" . (lambda (&optional prefix)

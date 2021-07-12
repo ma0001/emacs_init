@@ -60,7 +60,13 @@
 ;;
 (set-language-environment 'Japanese)
 (if system-windows-p
-    (prefer-coding-system 'utf-8-with-signature-dos)
+    (progn
+      ;;    (prefer-coding-system 'utf-8-with-signature-dos)
+      (prefer-coding-system 'utf-8-dos)
+      (set-file-name-coding-system 'cp932)
+      (set-keyboard-coding-system 'cp932)
+      (set-terminal-coding-system 'cp932)
+      (set-default 'buffer-file-coding-system 'utf-8-with-signature-dos))
   (prefer-coding-system 'utf-8-unix))
   
 
@@ -181,6 +187,8 @@
 
 ;検索で大文字考慮しない
 (setq-default case-fold-search t)
+;ただしC-w したときは大文字考慮する
+(setq search-upper-case t)
 
 (setq visible-bell nil)
 

@@ -1,0 +1,11 @@
+# key: fileh
+# name: fuji file header
+# --
+/***************************************************************/
+/** @file 		`(file-name-nondirectory buffer-file-name)`
+    @brief 		${1:ファイルの概要}
+    @attention 	（あれば）注意事項　　
+    @note 		（あれば）補足事項
+    @date		`(format-time-string "%Y/%m/%d")`
+    @author		suntec(masami iwata)
+****************************************************************/

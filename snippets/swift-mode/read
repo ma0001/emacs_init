@@ -1,0 +1,5 @@
+# key: read
+# name: read# key: read
+# name: read
+# --
+${1:Int}(readLine()!)!

@@ -1,6 +1,9 @@
 *
 !/elisp/
+!/elisp/*.el
 !init.el
 !my-init.el
 !git-complete
-
+!/snippets/
+!/snippets/*/
+!/snippets/*/*

@@ -1,0 +1,4 @@
+# key: reads
+# name: reads
+# --
+readLine()!.split(separator: " ").map { ${1:Int}(\$0)! }

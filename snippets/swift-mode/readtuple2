@@ -1,0 +1,7 @@
+# key: readtuple2
+# name: readtuple2
+# --
+func readtuple2() -> (${1:Int}, ${2:Int}) {
+    let x = readLine()!.split(separator: " ")
+    return($1(x[0])!, $2(x[1])!)    
+}

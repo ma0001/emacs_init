@@ -57,6 +57,8 @@
 
 (setq narrowing-system 'ivy)
 
+(setq greping-system 'rg)
+
 ;;
 (set-language-environment 'Japanese)
 (if system-windows-p
@@ -318,7 +320,8 @@
  ;; If there is more than one, they won't work right.
  '(mode-line ((t (:foreground "black" :background "orange"))))
  '(mode-line-buffer-id ((t (:foreground nil :background nil))))
- '(mode-line-inactive ((t (:foreground "gray50" :background "gray85")))))
+ '(mode-line-inactive ((t (:foreground "gray50" :background "gray85"))))
+ '(header-line ((t (:foreground "#51afef" :background "#505662")))))
 
 (use-package all-the-icons
   :ensure t
@@ -357,9 +360,10 @@
 (global-display-line-numbers-mode t)
 
 ;; ----------------------------------------------------------------
-;; grep , ag
+;; grep , ag, rg
 ;; ----------------------------------------------------------------
 (use-package ag
+  :if (eq greping-system 'ag)
   :ensure t
   :defer t
   :bind (("M-g M-r" . ag)
@@ -370,12 +374,31 @@
 
 ; wgrep
 (use-package wgrep-ag
+  :if (eq greping-system 'ag)
   :ensure t
   :commands (wgrep-ag-setup)
   :init
   (add-hook 'ag-mode-hook 'wgrep-ag-setup)
   (setq wgrep-auto-save-buffer t)       ; 編集完了と同時に保存
-  (setq wgrep-enable-key "r"))          ; "r" キーで編集モードに
+  (setq wgrep-enable-key "e"))          ; "r" キーで編集モードに
+
+(use-package rg
+  :if (eq greping-system 'rg)
+  :ensure t
+  :defer t
+  :bind (("M-g M-r" . rg)
+         ("M-g M-f" . search-everything-at-project))
+  :init
+  ;; wgrep は "e" に割り当てすみ
+  ;; "i" でignore無視して再検索
+  :config
+  (rg-define-search search-everything-at-project
+    "Search files everything in project directory"
+    :query ask
+    :format regexp
+    :files "everything"
+    :dir "project"
+  ))
 
 ;; ----------------------------------------------------------------
 ;; lightning-paren

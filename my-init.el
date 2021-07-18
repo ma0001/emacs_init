@@ -57,6 +57,8 @@
 
 (setq narrowing-system 'ivy)
 
+(setq greping-system 'rg)
+
 ;;
 (set-language-environment 'Japanese)
 (if system-windows-p
@@ -204,6 +206,9 @@
 ;; 列番号の表示（有効：t、無効：nil）
 (column-number-mode nil)
 
+;; カーソル行のハイライト
+(global-hl-line-mode 1)
+
 (global-set-key "\M-ga" 'align-regexp)
 
 (set-cursor-color "Orange")
@@ -318,7 +323,8 @@
  ;; If there is more than one, they won't work right.
  '(mode-line ((t (:foreground "black" :background "orange"))))
  '(mode-line-buffer-id ((t (:foreground nil :background nil))))
- '(mode-line-inactive ((t (:foreground "gray50" :background "gray85")))))
+ '(mode-line-inactive ((t (:foreground "gray50" :background "gray85"))))
+ '(header-line ((t (:foreground "#51afef" :background "#505662")))))
 
 (use-package all-the-icons
   :ensure t
@@ -357,9 +363,10 @@
 (global-display-line-numbers-mode t)
 
 ;; ----------------------------------------------------------------
-;; grep , ag
+;; grep , ag, rg
 ;; ----------------------------------------------------------------
 (use-package ag
+  :if (eq greping-system 'ag)
   :ensure t
   :defer t
   :bind (("M-g M-r" . ag)
@@ -370,12 +377,31 @@
 
 ; wgrep
 (use-package wgrep-ag
+  :if (eq greping-system 'ag)
   :ensure t
   :commands (wgrep-ag-setup)
   :init
   (add-hook 'ag-mode-hook 'wgrep-ag-setup)
   (setq wgrep-auto-save-buffer t)       ; 編集完了と同時に保存
-  (setq wgrep-enable-key "r"))          ; "r" キーで編集モードに
+  (setq wgrep-enable-key "e"))          ; "r" キーで編集モードに
+
+(use-package rg
+  :if (eq greping-system 'rg)
+  :ensure t
+  :defer t
+  :bind (("M-g M-r" . rg)
+         ("M-g M-f" . search-everything-at-project))
+  :init
+  ;; wgrep は "e" に割り当てすみ
+  ;; "i" でignore無視して再検索
+  :config
+  (rg-define-search search-everything-at-project
+    "Search files everything in project directory"
+    :query ask
+    :format regexp
+    :files "everything"
+    :dir "project"
+  ))
 
 ;; ----------------------------------------------------------------
 ;; lightning-paren
@@ -980,14 +1006,16 @@ With argument ARG, do this that many times."
   :hook (rust-mode . cargo-minor-mode))
 
 ;; ----------------------------------------------------------------
-;; hiwin
+;; 選択Windowsを分かりやすくする
 ;; ----------------------------------------------------------------
-(use-package hiwin
-  :disabled
-  :ensure t
-  :config
-  (hiwin-activate)
-  (set-face-background 'hiwin-face "gray80")) ;; 非アクティブウィンドウの背景色を設定
+(defun highlight-selected-window ()
+  "Highlight selected window with a different background color."
+  (walk-windows (lambda (w)
+                  (unless (eq w (selected-window))
+                    (with-current-buffer (window-buffer w)
+                      (buffer-face-set 'default)))))
+  (buffer-face-set '(:background "#111")))
+(add-hook 'buffer-list-update-hook 'highlight-selected-window)
 
 ;; ----------------------------------------------------------------
 ;; tr-ime
@@ -1226,6 +1254,10 @@ With argument ARG, do this that many times."
              (interactive "P\np")
              (xref-push-marker-stack)
              (isearch-forward regexp-p no-recursive-edit)))
+  ("<S-tab>" . (lambda ()
+                 (interactive)
+                 (xref-push-marker-stack)
+                 (counsel-rg)))
   (:map isearch-mode-map
         ("C-j" . swiper-from-isearch))
   (:map swiper-map

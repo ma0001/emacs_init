@@ -1254,7 +1254,7 @@ With argument ARG, do this that many times."
              (interactive "P\np")
              (xref-push-marker-stack)
              (isearch-forward regexp-p no-recursive-edit)))
-  ("<S-tab>" . (lambda (&optional regexp-p no-recursive-edit)
+  ("<S-tab>" . (lambda ()
                  (interactive)
                  (xref-push-marker-stack)
                  (counsel-rg)))

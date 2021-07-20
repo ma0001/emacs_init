@@ -1,0 +1,22 @@
+■フォント
+https://github.com/yuru7/HackGen/releases
+HackGenNerd_v2.4.0　をインストール
+options->Set default Font.. で設定
+options->saveoptions
+
+■msys2
+
+mingw-w64-x86_64-clang
+mingw-w64-x86_64-clang-tools-extra
+mingw64/mingw-w64-x86_64-lldb
+mingw64/mingw-w64-x86_64-gnupg
+msys/git
+mingw64/mingw-w64-x86_64-ripgrep
+msys/global
+mingw64/mingw-w64-x86_64-hunspell
+mingw64/mingw-w64-x86_64-hunspell-en
+
+
+
+■keyhac
+config.py を入れ替え

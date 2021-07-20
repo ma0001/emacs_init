@@ -133,9 +133,9 @@
   ;;
 
 ;;  (set-face-attribute 'default nil :family "Consolas" :height 90)
-  (set-face-attribute 'default nil :family "Courier New" :height 90)
-  (set-fontset-font nil 'japanese-jisx0208 (font-spec :family "MeiryoKe_Console"))
-  (setq face-font-rescale-alist '(("MeiryoKe_Console" . 1.08)))
+;;  (set-face-attribute 'default nil :family "Courier New" :height 90)
+;;  (set-fontset-font nil 'japanese-jisx0208 (font-spec :family "MeiryoKe_Console"))
+;;  (setq face-font-rescale-alist '(("MeiryoKe_Console" . 1.08)))
 
   ;;
   ;; リストを評価する(Ctrl-j)
@@ -400,7 +400,7 @@
     :query ask
     :format regexp
     :files "everything"
-    :dir "project"
+    :dir project
   ))
 
 ;; ----------------------------------------------------------------
@@ -603,9 +603,26 @@ With argument ARG, do this that many times."
    ;; `ivy-switch-buffer' (C-x b) のリストに recent files と bookmark を含める．
   (setq ivy-use-virtual-buffers t)
   (setq ivy-virtual-abbreviate 'full)
+  ;; デフォルトで入力される ^ 前方マッチ記号を非表示
+  (setq ivy-initial-inputs-alist
+        '((org-agenda-refile . "^")
+          (org-capture-refile . "^")
+          ;; (counsel-M-x . "^") ;; 削除．必要に応じて他のコマンドも除外する．
+          (counsel-describe-function . "^")
+          (counsel-describe-variable . "^")
+          (Man-completion-table . "^")
+          (woman . "^")))
   )
 
+(use-package smex
+  :if (eq narrowing-system 'ivy)
+  :ensure t
+  :config
+  (setq smex-history-length 35)
+  (setq smex-completion-method 'ivy))
+
 (use-package ivy-rich
+  :if (eq narrowing-system 'ivy)
   :ensure t
   :config
   (ivy-rich-mode 1)
@@ -1035,7 +1052,7 @@ With argument ARG, do this that many times."
     (w32-ime-initialize)
     ;; IME変更
     (global-set-key (kbd "C-\\") 'toggle-input-method)
-    (global-set-key "\M- " 'toggle-input-method)
+;;    (global-set-key (kbd "<M-spc>") 'toggle-input-method)
     ;; 漢字/変換キー入力時のエラーメッセージ抑止
     (global-set-key (kbd "<M-kanji>") 'ignore)
     (global-set-key (kbd "<kanji>") 'ignore)

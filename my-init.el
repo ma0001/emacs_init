@@ -106,67 +106,23 @@
 ;; ----------------------------------------------------------------
 ;; font set
 ;; ----------------------------------------------------------------
-(cond
- (system-darwin-p
-  (create-fontset-from-ascii-font "Menlo-12:weight=normal:slant=normal" nil "menlokakugo")
-  (set-fontset-font "fontset-menlokakugo"
-		    'unicode
-		    (font-spec :family "Hiragino Kaku Gothic ProN" :size 14)
-		    nil
-		    'append)
-  (add-to-list 'default-frame-alist '(font . "fontset-menlokakugo")))
+;; Options->setdefault font で HackGenNerd を選択して Options->save options
+;;
+;; フォント
+;; abcdefghijklmnopqrstuvwxyz 
+;; ABCDEFGHIJKLMNOPQRSTUVWXYZ
+;; `1234567890-=\[];',./
+;; ~!@#$%^&*()_+|{}:"<>?
+;;
+;; 壱弐参四五壱弐参四五壱弐参四五壱弐参四五壱弐参四五壱弐参四五
+;; 123456789012345678901234567890123456789012345678901234567890
+;; ABCdeＡＢＣｄｅ
+;;
+;; ┌─────────────────────────────┐
+;; │　　　　　　　　　　　　　罫線                            │
+;; └─────────────────────────────┘
+;;
 
- (system-windows-p
-  ;; フォント
-  ;; abcdefghijklmnopqrstuvwxyz 
-  ;; ABCDEFGHIJKLMNOPQRSTUVWXYZ
-  ;; `1234567890-=\[];',./
-  ;; ~!@#$%^&*()_+|{}:"<>?
-  ;;
-  ;; 壱弐参四五壱弐参四五壱弐参四五壱弐参四五壱弐参四五壱弐参四五
-  ;; 123456789012345678901234567890123456789012345678901234567890
-  ;; ABCdeＡＢＣｄｅ
-  ;;
-  ;; ┌─────────────────────────────┐
-  ;; │　　　　　　　　　　　　　罫線                            │
-  ;; └─────────────────────────────┘
-  ;;
-
-;;  (set-face-attribute 'default nil :family "Consolas" :height 90)
-  (set-face-attribute 'default nil :family "Courier New" :height 90)
-  (set-fontset-font nil 'japanese-jisx0208 (font-spec :family "MeiryoKe_Console"))
-  (setq face-font-rescale-alist '(("MeiryoKe_Console" . 1.08)))
-
-  ;;
-  ;; リストを評価する(Ctrl-j)
-  ;;   フォントファミリ (pp (font-family-list))
-  ;;   文字セット       (pp (charset-list))
-  ;;   フェース         (pp (face-list))
-
-
-  )
- (nil
-  ;; デフォルト フォント
-  ;; (set-face-attribute 'default nil :family "Migu 1M" :height 110)
-  (set-face-font 'default "Migu 1M-11:antialias=standard")
-  ;; プロポーショナル フォント
-  ;; (set-face-attribute 'variable-pitch nil :family "Migu 1M" :height 110)
-  (set-face-font 'variable-pitch "Migu 1M-11:antialias=standard")
-  ;; 等幅フォント
-  ;; (set-face-attribute 'fixed-pitch nil :family "Migu 1M" :height 110)
-  (set-face-font 'fixed-pitch "Migu 1M-11:antialias=standard")
-  ;; ツールチップ表示フォント
-  ;; (set-face-attribute 'tooltip nil :family "Migu 1M" :height 90)
-  (set-face-font 'tooltip "Migu 1M-9:antialias=standard")
-  ;; fontset
-  ;; フォントサイズ調整
-  (global-set-key (kbd "C-<wheel-up>")   '(lambda() (interactive) (text-scale-increase 1)))
-  (global-set-key (kbd "C-=")            '(lambda() (interactive) (text-scale-increase 1)))
-  (global-set-key (kbd "C-<wheel-down>") '(lambda() (interactive) (text-scale-decrease 1)))
-  (global-set-key (kbd "C--")            '(lambda() (interactive) (text-scale-decrease 1)))
-  ;; フォントサイズ リセット
-  (global-set-key (kbd "M-0") '(lambda() (interactive) (text-scale-set 0)))))
-  
 
 ;; ----------------------------------------------------------------
 ;; global settings
@@ -332,33 +288,6 @@
 ;; ----------------------------------------------------------------
 ;; line number
 ;; ----------------------------------------------------------------
-(use-package linum
-  :disabled
-  :init
-  (defvar linum-line-number 0)            ; 行移動を契機に描画
-  (declare-function linum-update-current "linum" ())
-  (defadvice linum-update-current
-      (around linum-update-current-around activate compile)
-    (unless (= linum-line-number (line-number-at-pos))
-      (setq linum-line-number (line-number-at-pos))
-      ad-do-it
-      ))
-
-  ;; バッファ中の行番号表示の遅延設定
-  (defvar linum-delay nil)
-  (setq linum-delay t)
-  (defadvice linum-schedule (around linum-schedule-around () activate)
-    (run-with-idle-timer 1.0 nil #'linum-update-current))
-
-  ;; 行番号の書式
-  (defvar linum-format nil)
-  (setq linum-format "%5d")
-
-  ;; バッファ中の行番号表示（有効：t、無効：nil）
-  (global-linum-mode t)
-
-  ;; 文字サイズ
-  (set-face-attribute 'linum nil :height 0.75))
 
 (global-display-line-numbers-mode t)
 
@@ -400,7 +329,7 @@
     :query ask
     :format regexp
     :files "everything"
-    :dir "project"
+    :dir project
   ))
 
 ;; ----------------------------------------------------------------
@@ -603,9 +532,26 @@ With argument ARG, do this that many times."
    ;; `ivy-switch-buffer' (C-x b) のリストに recent files と bookmark を含める．
   (setq ivy-use-virtual-buffers t)
   (setq ivy-virtual-abbreviate 'full)
+  ;; デフォルトで入力される ^ 前方マッチ記号を非表示
+  (setq ivy-initial-inputs-alist
+        '((org-agenda-refile . "^")
+          (org-capture-refile . "^")
+          ;; (counsel-M-x . "^") ;; 削除．必要に応じて他のコマンドも除外する．
+          (counsel-describe-function . "^")
+          (counsel-describe-variable . "^")
+          (Man-completion-table . "^")
+          (woman . "^")))
   )
 
+(use-package smex
+  :if (eq narrowing-system 'ivy)
+  :ensure t
+  :config
+  (setq smex-history-length 35)
+  (setq smex-completion-method 'ivy))
+
 (use-package ivy-rich
+  :if (eq narrowing-system 'ivy)
   :ensure t
   :config
   (ivy-rich-mode 1)
@@ -1035,7 +981,7 @@ With argument ARG, do this that many times."
     (w32-ime-initialize)
     ;; IME変更
     (global-set-key (kbd "C-\\") 'toggle-input-method)
-    (global-set-key "\M- " 'toggle-input-method)
+;;    (global-set-key (kbd "<M-spc>") 'toggle-input-method)
     ;; 漢字/変換キー入力時のエラーメッセージ抑止
     (global-set-key (kbd "<M-kanji>") 'ignore)
     (global-set-key (kbd "<kanji>") 'ignore)

@@ -964,6 +964,29 @@ With argument ARG, do this that many times."
 (add-hook 'buffer-list-update-hook 'highlight-selected-window)
 
 ;; ----------------------------------------------------------------
+;; projectによってモードラインの色を変える
+;; ----------------------------------------------------------------
+(require 'mode-line-color)
+(mode-line-color-mode)
+(defun my-set-mode-line-color (setter)
+  (unless mode-line-color-color
+    ;; この定義よりも優先して色設定している定義があったら何もしない
+    (let ((pj (cdr (project-current))))
+         (cond ((string-match "_MassProduct" pj) (funcall setter "Orange"))
+               ((string-match "_Bench" pj) (funcall setter "OliveDrab3"))
+               ((string-match "_Prototype" pj) (funcall setter "SlateBlue1"))
+               (t (funcall setter "Orange"))))))
+
+(add-hook 'mode-line-color-hook 'my-set-mode-line-color)
+
+(use-package switch-buffer-functions
+  :ensure t
+  :init
+  (add-hook 'switch-buffer-functions
+            (lambda (prev curr)
+              (mode-line-color-update))))
+
+;; ----------------------------------------------------------------
 ;; tr-ime
 ;; ----------------------------------------------------------------
 (use-package tr-ime

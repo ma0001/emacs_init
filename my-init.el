@@ -1272,7 +1272,7 @@ With argument ARG, do this that many times."
   (advice-add 'swiper-all-thing-at-point :before #'universal-mark-push-mark-wrapper)
   (advice-add 'counsel-rg :before #'universal-mark-push-mark-wrapper)
   :bind
-  ("M-," . backward-forward-previous-location)
+  ("M-," . universal-mark-previous-location)
   )
   
 

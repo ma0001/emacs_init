@@ -527,20 +527,23 @@ With argument ARG, do this that many times."
   :bind (("C-x C-f" . counsel-find-file)
          ("C-x b" . ivy-switch-buffer)
          ("M-y" . counsel-yank-pop)
-         ("M-x" . counsel-M-x))
+         ("M-x" . counsel-M-x)
+         ("C-c j" . counsel-imenu))
   :config
+  :custom
    ;; `ivy-switch-buffer' (C-x b) のリストに recent files と bookmark を含める．
-  (setq ivy-use-virtual-buffers t)
-  (setq ivy-virtual-abbreviate 'full)
+  (ivy-use-virtual-buffers t)
+  (ivy-virtual-abbreviate 'full)
   ;; デフォルトで入力される ^ 前方マッチ記号を非表示
-  (setq ivy-initial-inputs-alist
-        '((org-agenda-refile . "^")
-          (org-capture-refile . "^")
-          ;; (counsel-M-x . "^") ;; 削除．必要に応じて他のコマンドも除外する．
-          (counsel-describe-function . "^")
-          (counsel-describe-variable . "^")
-          (Man-completion-table . "^")
-          (woman . "^")))
+  (ivy-initial-inputs-alist
+   '((org-agenda-refile . "^")
+     (org-capture-refile . "^")
+     ;; (counsel-M-x . "^") ;; 削除．必要に応じて他のコマンドも除外する．
+     (counsel-describe-function . "^")
+     (counsel-describe-variable . "^")
+     (Man-completion-table . "^")
+     (woman . "^")))
+  (lsp-imenu-sort-methods '(position))
   )
 
 (use-package smex
@@ -1026,6 +1029,8 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; lsp-ui
 ;; ----------------------------------------------------------------
+;;clangd : プロジェクトのTOPに空の .clangd を作成することによりtagが使用できる
+
 (use-package lsp-mode
   :ensure t
   :custom
@@ -1213,20 +1218,9 @@ With argument ARG, do this that many times."
   (setq ivy-re-builders-alist '((t . ivy--regex-ignore-order)))
 
   :bind
-  ("C-c s" . (lambda (&optional prefix)
-               (interactive "P")
-               (xref-push-marker-stack)
-               (if prefix
-                   (swiper-all-thing-at-point)
-                 (swiper-isearch-thing-at-point))))
-  ("C-s" . (lambda (&optional regexp-p no-recursive-edit)
-             (interactive "P\np")
-             (xref-push-marker-stack)
-             (isearch-forward regexp-p no-recursive-edit)))
-  ("<S-tab>" . (lambda ()
-                 (interactive)
-                 (xref-push-marker-stack)
-                 (counsel-rg)))
+  ("C-c s" . swiper-isearch-thing-at-point)
+  ("C-s" . isearch-forward)
+  ("<S-tab>" . counsel-rg)
   (:map isearch-mode-map
         ("C-j" . swiper-from-isearch))
   (:map swiper-map
@@ -1268,6 +1262,18 @@ With argument ARG, do this that many times."
   :bind
   ("M-u" . my-string-inflection-cycle-auto))
   
+(use-package universal-mark
+  :after swiper
+  :init
+  :config
+  (universal-mark-mode t)
+  (advice-add 'isearch-forward :before #'universal-mark-push-mark-wrapper)
+  (advice-add 'swiper-isearch-thing-at-point :before #'universal-mark-push-mark-wrapper)
+  (advice-add 'swiper-all-thing-at-point :before #'universal-mark-push-mark-wrapper)
+  (advice-add 'counsel-rg :before #'universal-mark-push-mark-wrapper)
+  :bind
+  ("M-," . backward-forward-previous-location)
+  )
   
 
 

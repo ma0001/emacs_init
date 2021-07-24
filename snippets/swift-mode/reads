@@ -1,4 +1,4 @@
 # key: reads
 # name: reads
 # --
-readLine()!.split(separator: " ").map { ${1:Int}(\$0)! }
+let ${1:nums} = readLine()!.split(separator: " ").map { ${2:Int}(String(\$0))! }

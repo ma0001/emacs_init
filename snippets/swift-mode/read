@@ -2,4 +2,4 @@
 # name: read# key: read
 # name: read
 # --
-${1:Int}(readLine()!)!
+let ${1:num} = ${2:Int}(readLine()!)!

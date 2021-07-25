@@ -1218,10 +1218,11 @@ With argument ARG, do this that many times."
   ("M-u" . my-string-inflection-cycle-auto))
   
 (use-package universal-mark
+  :commands (universal-mark-mode)
   :after swiper
   :init
-  :config
   (universal-mark-mode t)
+  :config
   (advice-add 'isearch-forward :before #'universal-mark-push-mark-wrapper)
   (advice-add 'swiper-isearch-thing-at-point :before #'universal-mark-push-mark-wrapper)
   (advice-add 'swiper-all-thing-at-point :before #'universal-mark-push-mark-wrapper)

@@ -136,8 +136,9 @@ Borrows code from `pop-global-mark'."
   (interactive)
   (if (and (eql universal-mark-ring-traversal-position 0)
            (not
-            (and (eql (marker-buffer (elt universal-mark-ring 0)) (current-buffer))
-                  (eql (marker-position (elt universal-mark-ring 0)) (point)))))
+            (and (elt universal-mark-ring 0)
+		 (eql (marker-buffer (elt universal-mark-ring 0)) (current-buffer))
+                 (eql (marker-position (elt universal-mark-ring 0)) (point)))))
       ;;then we are at the beginning of our navigation chain and we want to mark the current position
       (universal-mark-push-mark))
   (if (< universal-mark-ring-traversal-position (1- (length universal-mark-ring)))

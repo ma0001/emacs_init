@@ -362,7 +362,7 @@ With argument ARG, do this that many times."
 (global-set-key [M-backspace] 'my-backward-kill-word)
 
 ;; ----------------------------------------------------------------
-;; gtags, rtags
+;; gtags
 ;; ----------------------------------------------------------------
 (use-package gtags
   :disabled
@@ -438,51 +438,6 @@ With argument ARG, do this that many times."
                ("M-*" . counsel-gtags-go-backward)))
 
 
-
-;; ---------------- rtags
-(use-package rtags
-  :if (and (not c-mode-company-use-lsp)
-           (executable-find "rdm")
-           (executable-find "rc"))
-  :init
-  (setq rtags-display-result-backend 'helm)
-  (add-hook 'c-mode-hook 'rtags-start-process-unless-running)
-  (add-hook 'c++-mode-hook 'rtags-start-process-unless-running)
-  (add-hook 'objc-mode-hook 'rtags-start-process-unless-running)
-
-  (defun use-rtags (&optional useFileManager)
-    (and (featurep 'rtags)
-         (cond ((not (gtags-get-rootpath)) t)
-               ((and (not (eq major-mode 'c++-mode))
-                     (not (eq major-mode 'c-mode)))
-                (rtags-has-filemanager))
-               (useFileManager (rtags-has-filemanager))
-               (t (rtags-is-indexed)))))
-
-  (defun tags-find-symbol ()
-    (interactive)
-    (call-interactively (if (use-rtags) 'rtags-find-symbol 'gtags-find-tag)))
-  (defun tags-find-references ()
-    (interactive)
-    (call-interactively (if (use-rtags) 'rtags-find-references 'gtags-find-rtag)))
-  (defun tags-pop-stack ()
-    (interactive)
-    (call-interactively (if (use-rtags) 'rtags-location-stack-back 'gtags-pop-stack)))
-  (defun tags-find-file ()
-    (interactive)
-    (call-interactively (if (use-rtags t) 'rtags-find-file 'gtags-find-file)))
-
-  (add-hook 'c-mode-common-hook
-            (lambda ()
-              (define-key c-mode-base-map (kbd "M-.") (function tags-find-symbol))
-              (define-key c-mode-base-map (kbd "M-r") (function tags-find-references))
-              (define-key c-mode-base-map (kbd "M-,") (function tags-pop-stack))
-              (define-key c-mode-base-map (kbd "M-*") (function tags-pop-stack))
-              (define-key c-mode-base-map (kbd "M-g f") (function tags-find-file))
-              (define-key c-mode-base-map (kbd "M-g v") (function rtags-find-virtuals-at-point))
-              (define-key c-mode-base-map (kbd "M-g n") (function rtags-next-match))
-              (define-key c-mode-base-map (kbd "M-g p") (function rtags-previous-match))
-              )))
 
 ;; ----------------------------------------------------------------
 ;;  for SLIME

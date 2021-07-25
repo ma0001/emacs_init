@@ -362,7 +362,7 @@ With argument ARG, do this that many times."
 (global-set-key [M-backspace] 'my-backward-kill-word)
 
 ;; ----------------------------------------------------------------
-;; gtags, rtags
+;; gtags
 ;; ----------------------------------------------------------------
 (use-package gtags
   :disabled
@@ -439,51 +439,6 @@ With argument ARG, do this that many times."
 
 
 
-;; ---------------- rtags
-(use-package rtags
-  :if (and (not c-mode-company-use-lsp)
-           (executable-find "rdm")
-           (executable-find "rc"))
-  :init
-  (setq rtags-display-result-backend 'helm)
-  (add-hook 'c-mode-hook 'rtags-start-process-unless-running)
-  (add-hook 'c++-mode-hook 'rtags-start-process-unless-running)
-  (add-hook 'objc-mode-hook 'rtags-start-process-unless-running)
-
-  (defun use-rtags (&optional useFileManager)
-    (and (featurep 'rtags)
-         (cond ((not (gtags-get-rootpath)) t)
-               ((and (not (eq major-mode 'c++-mode))
-                     (not (eq major-mode 'c-mode)))
-                (rtags-has-filemanager))
-               (useFileManager (rtags-has-filemanager))
-               (t (rtags-is-indexed)))))
-
-  (defun tags-find-symbol ()
-    (interactive)
-    (call-interactively (if (use-rtags) 'rtags-find-symbol 'gtags-find-tag)))
-  (defun tags-find-references ()
-    (interactive)
-    (call-interactively (if (use-rtags) 'rtags-find-references 'gtags-find-rtag)))
-  (defun tags-pop-stack ()
-    (interactive)
-    (call-interactively (if (use-rtags) 'rtags-location-stack-back 'gtags-pop-stack)))
-  (defun tags-find-file ()
-    (interactive)
-    (call-interactively (if (use-rtags t) 'rtags-find-file 'gtags-find-file)))
-
-  (add-hook 'c-mode-common-hook
-            (lambda ()
-              (define-key c-mode-base-map (kbd "M-.") (function tags-find-symbol))
-              (define-key c-mode-base-map (kbd "M-r") (function tags-find-references))
-              (define-key c-mode-base-map (kbd "M-,") (function tags-pop-stack))
-              (define-key c-mode-base-map (kbd "M-*") (function tags-pop-stack))
-              (define-key c-mode-base-map (kbd "M-g f") (function tags-find-file))
-              (define-key c-mode-base-map (kbd "M-g v") (function rtags-find-virtuals-at-point))
-              (define-key c-mode-base-map (kbd "M-g n") (function rtags-next-match))
-              (define-key c-mode-base-map (kbd "M-g p") (function rtags-previous-match))
-              )))
-
 ;; ----------------------------------------------------------------
 ;;  for SLIME
 ;; ----------------------------------------------------------------
@@ -527,20 +482,23 @@ With argument ARG, do this that many times."
   :bind (("C-x C-f" . counsel-find-file)
          ("C-x b" . ivy-switch-buffer)
          ("M-y" . counsel-yank-pop)
-         ("M-x" . counsel-M-x))
+         ("M-x" . counsel-M-x)
+         ("C-c j" . counsel-imenu))
   :config
+  :custom
    ;; `ivy-switch-buffer' (C-x b) のリストに recent files と bookmark を含める．
-  (setq ivy-use-virtual-buffers t)
-  (setq ivy-virtual-abbreviate 'full)
+  (ivy-use-virtual-buffers t)
+  (ivy-virtual-abbreviate 'full)
   ;; デフォルトで入力される ^ 前方マッチ記号を非表示
-  (setq ivy-initial-inputs-alist
-        '((org-agenda-refile . "^")
-          (org-capture-refile . "^")
-          ;; (counsel-M-x . "^") ;; 削除．必要に応じて他のコマンドも除外する．
-          (counsel-describe-function . "^")
-          (counsel-describe-variable . "^")
-          (Man-completion-table . "^")
-          (woman . "^")))
+  (ivy-initial-inputs-alist
+   '((org-agenda-refile . "^")
+     (org-capture-refile . "^")
+     ;; (counsel-M-x . "^") ;; 削除．必要に応じて他のコマンドも除外する．
+     (counsel-describe-function . "^")
+     (counsel-describe-variable . "^")
+     (Man-completion-table . "^")
+     (woman . "^")))
+  (lsp-imenu-sort-methods '(position))
   )
 
 (use-package smex
@@ -1026,6 +984,8 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; lsp-ui
 ;; ----------------------------------------------------------------
+;;clangd : プロジェクトのTOPに空の .clangd を作成することによりtagが使用できる
+
 (use-package lsp-mode
   :ensure t
   :custom
@@ -1213,20 +1173,9 @@ With argument ARG, do this that many times."
   (setq ivy-re-builders-alist '((t . ivy--regex-ignore-order)))
 
   :bind
-  ("C-c s" . (lambda (&optional prefix)
-               (interactive "P")
-               (xref-push-marker-stack)
-               (if prefix
-                   (swiper-all-thing-at-point)
-                 (swiper-isearch-thing-at-point))))
-  ("C-s" . (lambda (&optional regexp-p no-recursive-edit)
-             (interactive "P\np")
-             (xref-push-marker-stack)
-             (isearch-forward regexp-p no-recursive-edit)))
-  ("<S-tab>" . (lambda ()
-                 (interactive)
-                 (xref-push-marker-stack)
-                 (counsel-rg)))
+  ("C-c s" . swiper-isearch-thing-at-point)
+  ("C-s" . isearch-forward)
+  ("<S-tab>" . counsel-rg)
   (:map isearch-mode-map
         ("C-j" . swiper-from-isearch))
   (:map swiper-map
@@ -1268,6 +1217,19 @@ With argument ARG, do this that many times."
   :bind
   ("M-u" . my-string-inflection-cycle-auto))
   
+(use-package universal-mark
+  :commands (universal-mark-mode)
+  :after swiper
+  :init
+  (universal-mark-mode t)
+  :config
+  (advice-add 'isearch-forward :before #'universal-mark-push-mark-wrapper)
+  (advice-add 'swiper-isearch-thing-at-point :before #'universal-mark-push-mark-wrapper)
+  (advice-add 'swiper-all-thing-at-point :before #'universal-mark-push-mark-wrapper)
+  (advice-add 'counsel-rg :before #'universal-mark-push-mark-wrapper)
+  :bind
+  ("M-," . universal-mark-previous-location)
+  )
   
 
 

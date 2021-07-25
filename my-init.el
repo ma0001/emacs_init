@@ -924,25 +924,11 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; projectによってモードラインの色を変える
 ;; ----------------------------------------------------------------
-(require 'mode-line-color)
-(mode-line-color-mode)
-(defun my-set-mode-line-color (setter)
-  (unless mode-line-color-color
-    ;; この定義よりも優先して色設定している定義があったら何もしない
-    (let ((pj (cdr (project-current))))
-         (cond ((string-match "_MassProduct" pj) (funcall setter "Orange"))
-               ((string-match "_Bench" pj) (funcall setter "OliveDrab3"))
-               ((string-match "_Prototype" pj) (funcall setter "SlateBlue1"))
-               (t (funcall setter "Orange"))))))
+;; projectのルートに .dir-locals.el を作成することにより可能
+;; 例）　モードラインを黄色にして読み込み専用にする
+;; ((nil . ((eval . (face-remap-add-relative 'mode-line :foreground "black" :background "yellow"))))
+;;  (prog-mode . ((eval . (view-mode)))))
 
-(add-hook 'mode-line-color-hook 'my-set-mode-line-color)
-
-(use-package switch-buffer-functions
-  :ensure t
-  :init
-  (add-hook 'switch-buffer-functions
-            (lambda (prev curr)
-              (mode-line-color-update))))
 
 ;; ----------------------------------------------------------------
 ;; tr-ime

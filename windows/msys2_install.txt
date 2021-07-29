@@ -20,3 +20,7 @@ mingw64/mingw-w64-x86_64-hunspell-en
 
 ■keyhac
 config.py を入れ替え
+
+■alt space でIME切り替え
+AutoHotKey
+https://blog.goo.ne.jp/mocas_lab/e/3d1238365a243bb4614587076e159998

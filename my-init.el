@@ -1,14 +1,32 @@
-;; -*- mode: emacs-lisp; coding: utf-8; indent-tabs-mode: nil -*-
+;;; my-init.el --- My init.el  -*- lexical-binding: t; -*-
 
-;;; code:
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; My init.el.
+
+;;; Code:
+
+
 (add-to-list 'load-path "~/.emacs.d/elisp")
-(add-to-list 'load-path "~/.emacs.d/git-complete")
 
 ;; ----------------------------------------------------------------
 ;; utility function
 ;; ----------------------------------------------------------------
 (defun search-file-for-updir(dir filename)
-  "DIRから親ディレクトリ方向へ向かってFILENAMEを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す。"
+  "DIRから親ディレクトリ方向へ向かってFILENAMEを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す."
   (cond
    ((file-exists-p (expand-file-name filename dir))
     dir)
@@ -18,7 +36,7 @@
     (search-file-for-updir (file-name-directory (directory-file-name dir)) filename))))
 
 (defun search-file-for-downdir(dir filename)
-  "DIRから子ディレクトリ方向へ向かってFILENAMEを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す。"
+  "DIRから子ディレクトリ方向へ向かってFILENAMEを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す."
   (if (file-directory-p dir)
       (catch 'found
         (message dir)
@@ -41,23 +59,23 @@
 ;; ----------------------------------------------------------------
 ;; Determine system
 ;; ----------------------------------------------------------------
-(setq system-darwin-p (eq system-type 'darwin)
-      system-windows-p (or (eq system-type 'windows-nt)
-                           (eq system-type 'cygwin)))
-(if system-darwin-p
-    (if-let ((dir (search-file-for-downdir "/usr/local/Cellar/llvm" "clangd")))
-        (setq exec-path (cons dir exec-path))))
-                           
+(defvar system-darwin-p (eq system-type 'darwin))
+(defvar system-windows-p (or (eq system-type 'windows-nt)
+                             (eq system-type 'cygwin)))
 
-(setq c-mode-company-use-lsp (cond ((executable-find "clangd")
+(defvar c-mode-company-use-lsp (cond ((executable-find "clangd")
                                     'clangd)
                                    ((executable-find "ccls")
                                     'ccls)
                                    (t nil)))
 
-(setq narrowing-system 'ivy)
+(defvar narrowing-system 'ivy)
 
-(setq greping-system 'rg)
+(defvar greping-system 'rg)
+
+(if system-darwin-p
+    (if-let ((dir (search-file-for-downdir "/usr/local/Cellar/llvm" "clangd")))
+        (setq exec-path (cons dir exec-path))))
 
 ;;
 (set-language-environment 'Japanese)
@@ -77,12 +95,9 @@
 ;; ----------------------------------------------------------------
 (cond
  (system-darwin-p
-  ;; ¥の代わりにバックスラッシュを入力する
-;;  (mac-translate-from-yen-to-backslash)
-
   (setq mac-command-modifier 'meta)
   (setq mac-option-modifier 'nil)
-  (setq x-select-enable-clipboard t))
+  (setq select-enable-clipboard t))
  (system-windows-p
   ;; Altキーを使用せずにMetaキーを使用（有効：t、無効：nil）
   (setq w32-alt-is-meta t)))
@@ -92,16 +107,33 @@
 ;; ----------------------------------------------------------------
 (cond
  (system-darwin-p
-  ;; デフォルトIME
-;;  (setq default-input-method "MacOSX")  ;set-language-environmentよりもあとにないとだめ
-  ;; モードラインの表示文字列
-;  (mac-set-input-method-parameter "com.google.inputmethod.Japanese.base" `title "あ")
-  ;; カーソルの色
-;  (mac-set-input-method-parameter "com.google.inputmethod.Japanese.base" `cursor-color "red")
-;  (mac-set-input-method-parameter "com.google.inputmethod.Japanese.Roman" `cursor-color "blue")
-  ;; ミニバッファを開いたときに英字にする（閉じてもモードは戻らない）
-  ;;  (add-hook 'minibuffer-setup-hook 'mac-change-language-to-us))
-  (mac-auto-ascii-mode 1)))
+  ;; C-\ でOSの入力モードを切り替える
+  (defun my/toggle-input-method ()
+    (interactive)
+    (message "my/toggle-input-method")
+    (if (string-match "\\.Roman$" (mac-input-source))
+	(progn
+          (mac-select-input-source "com.apple.inputmethod.Kotoeri.RomajiTyping.Japanese"))
+      (progn
+	(mac-select-input-source "com.apple.inputmethod.Kotoeri.RomajiTyping.Roman"))))
+
+  (global-set-key "\C-\\" 'my/toggle-input-method)
+
+  ;; モードラインにOSのIME状態を表示
+  (defvar mode-line-ime-info nil)
+
+  (setcdr (nthcdr 1 mode-line-format)
+	  (cons 'mode-line-ime-info (nthcdr 2 mode-line-format)))
+  (defun my/update-ime-info ()
+    (if (string-match "\\.Roman$" (mac-input-source))
+	(setq mode-line-ime-info nil)
+      (setq mode-line-ime-info "[こ]"))
+    (force-mode-line-update))
+  
+  (add-hook 'mac-selected-keyboard-input-source-change-hook 'my/update-ime-info)
+
+  (mac-auto-ascii-mode 1)
+  ))
 
 ;; ----------------------------------------------------------------
 ;; font set
@@ -109,7 +141,7 @@
 ;; Options->setdefault font で HackGenNerd を選択して Options->save options
 ;;
 ;; フォント
-;; abcdefghijklmnopqrstuvwxyz 
+;; abcdefghijklmnopqrstuvwxyz
 ;; ABCDEFGHIJKLMNOPQRSTUVWXYZ
 ;; `1234567890-=\[];',./
 ;; ~!@#$%^&*()_+|{}:"<>?
@@ -130,10 +162,14 @@
 
 ;;(setq Info-directory-list (list "/sw/share/info" "/sw/info" "/usr/share/info" "~/local/info" "~/local/share/info"))
 ;;(setq Info-additional-directory-list (list "/Applications/MacPorts/Emacs.app/Contents/Resources/info"))
-(setq Info-directory-list (list "/Applications/MacPorts/Emacs.app/Contents/Resources/info" "/Users/masami/local/info" "/Users/masami/local/share/info" "/opt/local/share/info"))
+(setq Info-directory-list (list "/Applications/MacPorts/Emacs.app/Contents/Resources/info"
+				"/Users/masami/local/info"
+				"/Users/masami/local/share/info"
+				"/opt/local/share/info"))
  
 (global-set-key "\M-l" 'goto-line)
 (global-set-key "\C-xc" 'compile)
+(global-set-key "\M-ga" 'align-regexp)
 
 ;; disable drag and drop in dired-mode
 (setq dired-dnd-protocol-alist nil)
@@ -148,6 +184,9 @@
 ;ただしC-w したときは大文字考慮する
 (setq search-upper-case t)
 
+;折り返し行も含めて次行へ移動
+(setq line-move-visual nil)
+
 (setq visible-bell nil)
 
 (show-paren-mode 1)
@@ -156,16 +195,15 @@
 ;; インデントは先頭のみ
 (setq c-tab-always-indent nil)
 
+;; ---------------- mode line
 ;; 行番号の表示（有効：t、無効：nil）
 (line-number-mode t)
-
 ;; 列番号の表示（有効：t、無効：nil）
 (column-number-mode nil)
 
+;;---------------- cursor
 ;; カーソル行のハイライト
 (global-hl-line-mode 1)
-
-(global-set-key "\M-ga" 'align-regexp)
 
 (set-cursor-color "Orange")
 (blink-cursor-mode 1)
@@ -174,11 +212,8 @@
 ;; 
 (setq recentf-max-saved-items 100)
 
-(setq default-tab-width 4)
+;(setq default-tab-width 4)
 
-(setq line-move-visual nil)
-
-(setq warning-suppress-types nil)
 ;; ----------------------------------------------------------------
 ;; backup
 ;; ----------------------------------------------------------------
@@ -566,12 +601,10 @@ With argument ARG, do this that many times."
   :init
   (use-package yasnippet-snippets
     :ensure t)
-  :bind (:map yas-keymap
-              ("<tab>" . nil)           ;companyと競合するのでyasnippetのフィールド移動は "C-i" のみにする
-              )
+  :bind
   :mode ("emacs.+/snippets/" . snippet-mode)
   :config
-  (add-to-list 'warning-suppress-types '(yasnippet backquote-change))
+  ; _t<tab>でsnippet展開しないようにする
   (setq yas-key-syntaxes '(yas-try-key-from-whitespace "w_.()" "w_." "w_"))
   (yas-global-mode 1))
 

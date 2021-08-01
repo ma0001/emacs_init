@@ -91,7 +91,92 @@
   
 
 ;; ----------------------------------------------------------------
-;; keybord bindings
+;; proxy
+;; ----------------------------------------------------------------
+(setq gnutls-algorithm-priority "normal:-vers-tls1.3")
+
+(cond ((getenv "HTTP_PROXY")
+       (let* ((url_ (url-generic-parse-url (getenv "HTTP_PROXY")))
+              (auth_ (if (and (url-user url_) (url-password url_) )
+                         (base64-encode-string
+                          (format "%s:%s" (url-user url_) (url-password url_)))
+                       nil))
+              (host_ (format "%s:%s" (url-host url_) (url-portspec url_))))
+
+         (setq url-proxy-services
+           (list (cons "no_proxy"  "^\\(localhost\\|10.*\\)")
+                 (cons "http" host_)
+                 (cons "https" host_)))
+         (if auth_
+             (setq url-http-proxy-basic-auth-storage
+               (list (list host_ (cons "/" auth_)))))
+         )))
+
+
+;;----- mse proxy hack
+;; (eval-after-load 'url-http
+;;   '(defun url-https-proxy-connect (connection)
+;;      (setq url-http-after-change-function 'url-https-proxy-after-change-function)
+;;      (process-send-string connection (format (concat "CONNECT %s:%d HTTP/1.1\r\n"
+;;                                                      "Host: %s:%d\r\n"
+;;                                                      "User-Agent: %s\r\n"
+;;                                                      "Proxy-Authorization: Basic %s\r\n"
+;;                                                      "\r\n")
+;;                                              (url-host url-current-object)
+;;                                              (or (url-port url-current-object)
+;;                                                  url-https-default-port)
+;;                                              (url-host url-current-object)
+;;                                              (or (url-port url-current-object)
+;;                                                  url-https-default-port)
+;;                                              (url-http--user-agent-default-string)
+;;                                              (let* ((url_ (url-generic-parse-url (getenv "HTTP_PROXY")))
+;;                                                     (auth_ (if (and (url-user url_) (url-password url_) )
+;;                                                                (base64-encode-string
+;;                                                                 (format "%s:%s" (url-user url_) (url-password url_))))))
+;;                                                auth_)))))
+
+;; ----------------------------------------------------------------
+;; leaf
+;; ----------------------------------------------------------------
+;; <leaf-install-code>
+(eval-and-compile
+  (customize-set-variable
+   'package-archives '(("org" . "https://orgmode.org/elpa/")
+                       ("melpa" . "https://melpa.org/packages/")
+                       ("gnu" . "https://elpa.gnu.org/packages/")))
+  (package-initialize)
+  (unless (package-installed-p 'leaf)
+    (package-refresh-contents)
+    (package-install 'leaf))
+
+  (leaf leaf-keywords
+    :ensure t
+    :init
+    ;; optional packages if you want to use :hydra, :el-get, :blackout,,,
+    (leaf hydra :ensure t)
+    (leaf el-get :ensure t)
+    (leaf blackout :ensure t)
+
+    :config
+    ;; initialize leaf-keywords.el
+    (leaf-keywords-init)))
+;; </leaf-install-code>
+
+;; Now you can use leaf!
+(leaf leaf-tree :ensure t)
+(leaf leaf-convert :ensure t)
+(leaf transient-dwim
+  :ensure t
+  :bind (("M-=" . transient-dwim-dispatch)))
+
+;; customが出力するinit.el へのcustom-set-variables出力を変更する
+(leaf cus-edit
+  :doc "tools for customizing Emacs and Lisp packages"
+  :tag "builtin" "faces" "help"
+  :custom `((custom-file . ,(locate-user-emacs-file "custom.el"))))
+
+;; ----------------------------------------------------------------
+;; meta key bindings
 ;; ----------------------------------------------------------------
 (cond
  (system-darwin-p
@@ -105,39 +190,83 @@
 ;; ----------------------------------------------------------------
 ;; input method
 ;; ----------------------------------------------------------------
-(cond
- (system-darwin-p
-  ;; C-\ でOSの入力モードを切り替える
-  (defun my/toggle-input-method ()
-    (interactive)
-    (message "my/toggle-input-method")
-    (if (string-match "\\.Roman$" (mac-input-source))
+(leaf *input-method
+  :config
+  ;; ---------------- mac
+  (leaf
+    :if system-darwin-p
+    :config
+    ;; C-\ でOSの入力モードを切り替える
+    (defun my/toggle-input-method ()
+      (interactive)
+      (message "my/toggle-input-method")
+      (if (string-match "\\.Roman$" (mac-input-source))
+	  (progn
+            (mac-select-input-source "com.apple.inputmethod.Kotoeri.RomajiTyping.Japanese"))
 	(progn
-          (mac-select-input-source "com.apple.inputmethod.Kotoeri.RomajiTyping.Japanese"))
-      (progn
-	(mac-select-input-source "com.apple.inputmethod.Kotoeri.RomajiTyping.Roman"))))
+	  (mac-select-input-source "com.apple.inputmethod.Kotoeri.RomajiTyping.Roman"))))
 
-  (global-set-key "\C-\\" 'my/toggle-input-method)
+    (global-set-key "\C-\\" 'my/toggle-input-method)
 
-  ;; モードラインにOSのIME状態を表示
-  (defvar mode-line-ime-info nil)
+    ;; モードラインにOSのIME状態を表示
+    (defvar mode-line-ime-info nil)
 
-  (setcdr (nthcdr 1 mode-line-format)
-	  (cons 'mode-line-ime-info (nthcdr 2 mode-line-format)))
-  (defun my/update-ime-info ()
-    (if (string-match "\\.Roman$" (mac-input-source))
-	(setq mode-line-ime-info nil)
-      (setq mode-line-ime-info "[こ]"))
-    (force-mode-line-update))
-  
-  (add-hook 'mac-selected-keyboard-input-source-change-hook 'my/update-ime-info)
+    (setcdr (nthcdr 1 mode-line-format)
+	    (cons 'mode-line-ime-info (nthcdr 2 mode-line-format)))
 
-  (mac-auto-ascii-mode 1)
-  ))
+    (defun my/update-ime-info ()
+      (if (string-match "\\.Roman$" (mac-input-source))
+	  (setq mode-line-ime-info "[Aa]")
+	(setq mode-line-ime-info "[こ]"))
+      (force-mode-line-update))
+    
+    (add-hook 'mac-selected-keyboard-input-source-change-hook 'my/update-ime-info)
+
+    (mac-auto-ascii-mode 1))
+
+  ;; ---------------- win
+  (leaf tr-ime
+    :if system-windows-p
+    :ensure t
+    :config
+    (tr-ime-advanced-install)
+    (when (fboundp 'w32-ime-initialize)
+      ;; モードラインの表示文字列
+      (setq-default w32-ime-mode-line-state-indicator "[Aa] ")
+      (setq w32-ime-mode-line-state-indicator-list '("[Aa]" "[あ]" "[Aa]"))
+      ;; デフォルトIME
+      (setq default-input-method "W32-IME")
+      ;; IME初期化
+      (w32-ime-initialize)
+      ;; IME変更
+      (global-set-key (kbd "C-\\") 'toggle-input-method)
+      ;;    (global-set-key (kbd "<M-spc>") 'toggle-input-method)
+      ;; 漢字/変換キー入力時のエラーメッセージ抑止
+      (global-set-key (kbd "<M-kanji>") 'ignore)
+      (global-set-key (kbd "<kanji>") 'ignore)
+      ;; minibufferのアクティブ時、IMEを無効化
+      (add-hook 'minibuffer-setup-hook
+		(lambda ()
+                  (deactivate-input-method)))
+      (wrap-function-to-control-ime 'universal-argument t nil)
+      (wrap-function-to-control-ime 'read-string nil nil)
+      (wrap-function-to-control-ime 'read-char nil nil)
+      (wrap-function-to-control-ime 'read-from-minibuffer nil nil)
+      (wrap-function-to-control-ime 'y-or-n-p nil nil)
+      (wrap-function-to-control-ime 'yes-or-no-p nil nil)
+      (wrap-function-to-control-ime 'map-y-or-n-p nil nil)
+      ;; バッファ切り替え時の状態引継ぎ設定（有効：t、無効：nil）
+      (setq w32-ime-buffer-switch-p t)
+      ))
+  )
+
 
 ;; ----------------------------------------------------------------
 ;; font set
 ;; ----------------------------------------------------------------
+(custom-set-faces
+ '(default ((t (:family "HackGenNerd" :foundry "nil" :slant normal :weight normal :height 141 :width normal)))))
+ 
 ;; Options->setdefault font で HackGenNerd を選択して Options->save options
 ;;
 ;; フォント
@@ -225,55 +354,6 @@
 (setq auto-save-file-name-transforms
   `((".*", (expand-file-name "~/.emacs.d/backup/") t)))
 
-;; ----------------------------------------------------------------
-;; package list
-;; ----------------------------------------------------------------
-(require 'package)
-(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
-;;(add-to-list 'package-archives  '("marmalade" . "http://marmalade-repo.org/packages/"))
-;;(setq url-proxy-services '(("http" . "proxy-odc.intra.daifuku.co.jp:8080")))
-(setq gnutls-algorithm-priority "normal:-vers-tls1.3")
-
-(cond ((getenv "HTTP_PROXY")
-       (let* ((url_ (url-generic-parse-url (getenv "HTTP_PROXY")))
-              (auth_ (if (and (url-user url_) (url-password url_) )
-                         (base64-encode-string
-                          (format "%s:%s" (url-user url_) (url-password url_)))
-                       nil))
-              (host_ (format "%s:%s" (url-host url_) (url-portspec url_))))
-
-         (setq url-proxy-services
-           (list (cons "no_proxy"  "^\\(localhost\\|10.*\\)")
-                 (cons "http" host_)
-                 (cons "https" host_)))
-         (if auth_
-             (setq url-http-proxy-basic-auth-storage
-               (list (list host_ (cons "/" auth_)))))
-         )))
-
-(package-initialize)
-
-;;----- mse proxy hack
-;; (eval-after-load 'url-http
-;;   '(defun url-https-proxy-connect (connection)
-;;      (setq url-http-after-change-function 'url-https-proxy-after-change-function)
-;;      (process-send-string connection (format (concat "CONNECT %s:%d HTTP/1.1\r\n"
-;;                                                      "Host: %s:%d\r\n"
-;;                                                      "User-Agent: %s\r\n"
-;;                                                      "Proxy-Authorization: Basic %s\r\n"
-;;                                                      "\r\n")
-;;                                              (url-host url-current-object)
-;;                                              (or (url-port url-current-object)
-;;                                                  url-https-default-port)
-;;                                              (url-host url-current-object)
-;;                                              (or (url-port url-current-object)
-;;                                                  url-https-default-port)
-;;                                              (url-http--user-agent-default-string)
-;;                                              (let* ((url_ (url-generic-parse-url (getenv "HTTP_PROXY")))
-;;                                                     (auth_ (if (and (url-user url_) (url-password url_) )
-;;                                                                (base64-encode-string
-;;                                                                 (format "%s:%s" (url-user url_) (url-password url_))))))
-;;                                                auth_)))))
 
 ;; ----------------------------------------------------------------
 ;; theme
@@ -302,16 +382,9 @@
   ;; Corrects (and improves) org-mode's native fontification.
   (doom-themes-org-config))
 
-;;(add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
-;;(load-theme 'wheat t)
-;(load-theme 'gnupack-dark t)
 
 ;; 選択バッファをわかりやすく表示
 (custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
  '(mode-line ((t (:foreground "black" :background "orange"))))
  '(mode-line-buffer-id ((t (:foreground nil :background nil))))
  '(mode-line-inactive ((t (:foreground "gray50" :background "gray85"))))
@@ -520,7 +593,12 @@ With argument ARG, do this that many times."
          ("M-x" . counsel-M-x)
          ("C-c j" . counsel-imenu))
   :config
-  :custom
+  (custom-set-faces
+   ;; elispでのcompletion-at-point での選択表示が分かりにくいので変更
+   '(ivy-current-match
+     ((t :background "#1a4b77" :foreground "white"  t :extend t)))
+   )
+   :custom
    ;; `ivy-switch-buffer' (C-x b) のリストに recent files と bookmark を含める．
   (ivy-use-virtual-buffers t)
   (ivy-virtual-abbreviate 'full)
@@ -529,8 +607,8 @@ With argument ARG, do this that many times."
    '((org-agenda-refile . "^")
      (org-capture-refile . "^")
      ;; (counsel-M-x . "^") ;; 削除．必要に応じて他のコマンドも除外する．
-     (counsel-describe-function . "^")
-     (counsel-describe-variable . "^")
+     ;;(counsel-describe-function . "^")
+     ;;(counsel-describe-variable . "^")
      (Man-completion-table . "^")
      (woman . "^")))
   (lsp-imenu-sort-methods '(position))
@@ -604,7 +682,7 @@ With argument ARG, do this that many times."
   :bind
   :mode ("emacs.+/snippets/" . snippet-mode)
   :config
-  ; _t<tab>でsnippet展開しないようにする
+  ; time_t<tab>などでsnippet展開しないようにする
   (setq yas-key-syntaxes '(yas-try-key-from-whitespace "w_.()" "w_." "w_"))
   (yas-global-mode 1))
 
@@ -962,43 +1040,6 @@ With argument ARG, do this that many times."
 ;; ((nil . ((eval . (face-remap-add-relative 'mode-line :foreground "black" :background "yellow"))))
 ;;  (prog-mode . ((eval . (view-mode)))))
 
-
-;; ----------------------------------------------------------------
-;; tr-ime
-;; ----------------------------------------------------------------
-(use-package tr-ime
-  :if system-windows-p
-  :ensure t
-  :config
-  (tr-ime-advanced-install)
-  (when (fboundp 'w32-ime-initialize)
-    ;; モードラインの表示文字列
-    (setq-default w32-ime-mode-line-state-indicator "[Aa] ")
-    (setq w32-ime-mode-line-state-indicator-list '("[Aa]" "[あ]" "[Aa]"))
-    ;; デフォルトIME
-    (setq default-input-method "W32-IME")
-    ;; IME初期化
-    (w32-ime-initialize)
-    ;; IME変更
-    (global-set-key (kbd "C-\\") 'toggle-input-method)
-;;    (global-set-key (kbd "<M-spc>") 'toggle-input-method)
-    ;; 漢字/変換キー入力時のエラーメッセージ抑止
-    (global-set-key (kbd "<M-kanji>") 'ignore)
-    (global-set-key (kbd "<kanji>") 'ignore)
-    ;; minibufferのアクティブ時、IMEを無効化
-    (add-hook 'minibuffer-setup-hook
-              (lambda ()
-                (deactivate-input-method)))
-    (wrap-function-to-control-ime 'universal-argument t nil)
-    (wrap-function-to-control-ime 'read-string nil nil)
-    (wrap-function-to-control-ime 'read-char nil nil)
-    (wrap-function-to-control-ime 'read-from-minibuffer nil nil)
-    (wrap-function-to-control-ime 'y-or-n-p nil nil)
-    (wrap-function-to-control-ime 'yes-or-no-p nil nil)
-    (wrap-function-to-control-ime 'map-y-or-n-p nil nil)
-    ;; バッファ切り替え時の状態引継ぎ設定（有効：t、無効：nil）
-    (setq w32-ime-buffer-switch-p t)
-    ))
 
 ;; ----------------------------------------------------------------
 ;; lsp-ui

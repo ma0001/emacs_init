@@ -338,7 +338,7 @@
 ;; カーソル行のハイライト
 (global-hl-line-mode 1)
 
-(set-cursor-color "Orange")
+(set-cursor-color "orange")
 (blink-cursor-mode 1)
 
 (setq use-dialog-box nil)
@@ -1295,6 +1295,12 @@ With argument ARG, do this that many times."
   ("M-," . universal-mark-previous-location)
   )
   
+;; ----------------------------------------------------------------
+;;  rainbow mode
+;; ----------------------------------------------------------------
+(leaf rainbow-mode
+  :ensure t
+  :hook css-mode-hook less-mode-hook web-mode-hook html-mode-hook emacs-lisp-mode-hook)
 
 
 

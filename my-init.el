@@ -64,10 +64,10 @@
                              (eq system-type 'cygwin)))
 
 (defvar c-mode-company-use-lsp (cond ((executable-find "clangd")
-                                    'clangd)
-                                   ((executable-find "ccls")
-                                    'ccls)
-                                   (t nil)))
+                                      'clangd)
+                                     ((executable-find "ccls")
+                                      'ccls)
+                                     (t nil)))
 
 (defvar narrowing-system 'ivy)
 
@@ -1033,7 +1033,7 @@ With argument ARG, do this that many times."
                   (unless (eq w (selected-window))
                     (with-current-buffer (window-buffer w)
                       (buffer-face-set 'default)))))
-  (buffer-face-set '(:background "#111")))
+  (with-current-buffer (window-buffer (selected-window)) (buffer-face-set '(:background "#111"))))
 (add-hook 'buffer-list-update-hook 'highlight-selected-window)
 
 ;; ----------------------------------------------------------------

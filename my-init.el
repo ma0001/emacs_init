@@ -197,7 +197,7 @@
 (leaf *input-method
   :config
   ;; ---------------- mac
-  (leaf
+  (leaf *mac-ime
     :if system-darwin-p
     :config
     ;; C-\ でOSの入力モードを切り替える

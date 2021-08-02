@@ -169,6 +169,10 @@
   :ensure t
   :bind (("M-=" . transient-dwim-dispatch)))
 
+(leaf macrostep
+  :ensure t
+  :bind (("C-c e" . macrostep-expand)))
+
 ;; customが出力するinit.el へのcustom-set-variables出力を変更する
 (leaf cus-edit
   :doc "tools for customizing Emacs and Lisp packages"
@@ -849,7 +853,7 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; flycheck
 ;; ----------------------------------------------------------------
-(use-package flycheck
+(leaf flycheck
   :ensure t
   :config
   (global-flycheck-mode t))
@@ -858,7 +862,7 @@ With argument ARG, do this that many times."
 ;; flycheck-irony
 ;; ----------------------------------------------------------------
 (use-package flycheck-irony
-  :disabled
+  :if (not c-mode-company-use-lsp)
   :ensure t
   :init
   (eval-after-load 'flycheck

@@ -268,9 +268,13 @@
 ;; ----------------------------------------------------------------
 ;; font set
 ;; ----------------------------------------------------------------
-(custom-set-faces
- '(default ((t (:family "HackGenNerd" :foundry "nil" :slant normal :weight normal :height 141 :width normal)))))
- 
+(cond (system-darwin-p
+       (custom-set-faces
+	'(default ((t (:family "HackGenNerd" :foundry "nil" :slant normal :weight normal :height 141 :width normal))))))
+       (system-windows-p
+	(custom-set-faces
+	 '(default ((t (:family "HackGenNerd" :foundry "outline" :slant normal :weight normal :height 90 :width normal)))))))
+
 ;; Options->setdefault font で HackGenNerd を選択して Options->save options
 ;;
 ;; フォント

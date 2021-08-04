@@ -1312,10 +1312,7 @@ With argument ARG, do this that many times."
 (defun my/split-window (&optional arg)
   (interactive "P")
   (if arg
-      (let* ((height (frame-height))
-	     (width (frame-width))
-	     (frame `((width . ,width) (height . ,height))))
-	(make-frame frame))
+      (make-frame `((width . ,(frame-width)) (height . ,(frame-height))))
     (split-window-below)))
   
 (defun my/other-window (&optional arg)

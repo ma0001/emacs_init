@@ -1306,5 +1306,35 @@ With argument ARG, do this that many times."
   :ensure t
   :hook css-mode-hook less-mode-hook web-mode-hook html-mode-hook emacs-lisp-mode-hook)
 
+;; ----------------------------------------------------------------
+;;  arg付きのsplit-windowやother-windowは別frameにする
+;; ----------------------------------------------------------------
+(defun my/split-window (&optional arg)
+  (interactive "P")
+  (if arg
+      (let* ((height (frame-height))
+	     (width (frame-width))
+	     (frame `((width . ,width) (height . ,height))))
+	(make-frame frame))
+    (split-window-below)))
+  
+(defun my/other-window (&optional arg)
+  (interactive "P")
+  (if arg
+      (other-frame 1)
+    (other-window 1)))
+
+(defun my/delete-window (&optional arg)
+  (interactive "P")
+  (if arg
+      (delete-frame)
+    (delete-window)))
+
+(global-set-key "\C-xo" 'my/other-window)
+(global-set-key "\C-x2" 'my/split-window)
+(global-set-key "\C-x0" 'my/delete-window)
+  
+
+
 
 

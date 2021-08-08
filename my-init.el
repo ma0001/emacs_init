@@ -73,6 +73,8 @@
 
 (defvar greping-system 'rg)
 
+(defvar theme-selection 'doom)
+
 (if system-darwin-p
     (if-let ((dir (search-file-for-downdir "/usr/local/Cellar/llvm" "clangd")))
         (setq exec-path (cons dir exec-path))))
@@ -134,6 +136,23 @@
 ;;                                                                (base64-encode-string
 ;;                                                                 (format "%s:%s" (url-user url_) (url-password url_))))))
 ;;                                                auth_)))))
+
+;; ----------------------------------------------------------------
+;; straight
+;;  https://github.com/raxod502/straight.el
+;; ----------------------------------------------------------------
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
 
 ;; ----------------------------------------------------------------
 ;; leaf
@@ -366,30 +385,47 @@
 ;; ----------------------------------------------------------------
 ;; theme
 ;; ----------------------------------------------------------------
-(use-package doom-themes
+(leaf doom-themes
+  :if (eq theme-selection 'doom)
   :ensure t
-  :init
-  (custom-set-faces
-   '(yas-field-highlight-face ((t (:inherit match :inverse-video t)))))
-  :config
+  :custom-face
+  (yas-field-highlight-face . '((t (:inherit match :inverse-video t))))
+  :custom
   ;; Global settings (defaults)
-  (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
-        doom-themes-enable-italic t) ; if nil, italics is universally disabled
+  ((doom-themes-enable-bold . t)    ; if nil, bold is universally disabled
+   (doom-themes-enable-italic . t) ; if nil, italics is universally disabled
+   (doom-themes-treemacs-theme .  "doom-colors")) ; use the colorful treemacs theme
+  :config
   ;;;(load-theme 'doom-nord-light t)
   (load-theme 'doom-vibrant t)
-
   ;; Enable flashing mode-line on errors
   (doom-themes-visual-bell-config)
-  
   ;; Enable custom neotree theme (all-the-icons must be installed!)
   (doom-themes-neotree-config)
   ;; or for treemacs users
-  (setq doom-themes-treemacs-theme "doom-colors") ; use the colorful treemacs theme
   (doom-themes-treemacs-config)
-  
   ;; Corrects (and improves) org-mode's native fontification.
-  (doom-themes-org-config))
+  (doom-themes-org-config)
+  ;; ----------------------------------------------------------------
+  ;; 選択Windowsを分かりやすくする
+  ;; ----------------------------------------------------------------
+  (defun highlight-selected-window ()
+    "Highlight selected window with a different background color."
+    (walk-windows (lambda (w)
+                    (unless (eq w (selected-window))
+                      (with-current-buffer (window-buffer w)
+                        (buffer-face-set 'default)))))
+    (with-current-buffer (window-buffer (selected-window)) (buffer-face-set '(:background "#111"))))
+  (add-hook 'buffer-list-update-hook 'highlight-selected-window))
 
+
+
+(leaf nano
+  :if (eq theme-selection 'nano)
+  :straight
+  (nano-emacs :type git :host github :repo "rougier/nano-emacs")
+  :config
+  (require 'nano))
 
 ;; 選択バッファをわかりやすく表示
 (custom-set-faces
@@ -398,7 +434,7 @@
  '(mode-line-inactive ((t (:foreground "gray50" :background "gray85"))))
  '(header-line ((t (:foreground "#51afef" :background "#505662")))))
 
-(use-package all-the-icons
+(leaf all-the-icons
   :ensure t
   )
 ;; ----------------------------------------------------------------
@@ -410,36 +446,30 @@
 ;; ----------------------------------------------------------------
 ;; grep , ag, rg
 ;; ----------------------------------------------------------------
-(use-package ag
+(leaf ag
   :if (eq greping-system 'ag)
   :ensure t
-  :defer t
   :bind (("M-g M-r" . ag)
          ("M-g M-f" . ag-regexp))
-  :init
-  (setq ag-highlight-search t)  ; 検索キーワードをハイライト
-  (setq ag-reuse-buffers nil))  ; 検索ごとに新バッファを作る
+  :custom
+  ((ag-highlight-search . t)  ; 検索キーワードをハイライト
+   (ag-reuse-buffers . t))  ; 検索ごとに新バッファを作る
+  ;; wgrep
+  :config
+  (leaf wgrep-ag
+    :ensure t
+    :custom
+    ((wgrep-auto-save-buffer . t)       ; 編集完了と同時に保存
+     (wgrep-enable-key . "e"))))          ; "r" キーで編集モードに
 
-; wgrep
-(use-package wgrep-ag
-  :if (eq greping-system 'ag)
-  :ensure t
-  :commands (wgrep-ag-setup)
-  :init
-  (add-hook 'ag-mode-hook 'wgrep-ag-setup)
-  (setq wgrep-auto-save-buffer t)       ; 編集完了と同時に保存
-  (setq wgrep-enable-key "e"))          ; "r" キーで編集モードに
-
-(use-package rg
+(leaf rg
   :if (eq greping-system 'rg)
   :ensure t
-  :defer t
   :bind (("M-g M-r" . rg)
          ("M-g M-f" . search-everything-at-project))
-  :init
+  :config
   ;; wgrep は "e" に割り当てすみ
   ;; "i" でignore無視して再検索
-  :config
   (rg-define-search search-everything-at-project
     "Search files everything in project directory"
     :query ask
@@ -1027,18 +1057,6 @@ With argument ARG, do this that many times."
 (use-package cargo
   :ensure t
   :hook (rust-mode . cargo-minor-mode))
-
-;; ----------------------------------------------------------------
-;; 選択Windowsを分かりやすくする
-;; ----------------------------------------------------------------
-(defun highlight-selected-window ()
-  "Highlight selected window with a different background color."
-  (walk-windows (lambda (w)
-                  (unless (eq w (selected-window))
-                    (with-current-buffer (window-buffer w)
-                      (buffer-face-set 'default)))))
-  (with-current-buffer (window-buffer (selected-window)) (buffer-face-set '(:background "#111"))))
-(add-hook 'buffer-list-update-hook 'highlight-selected-window)
 
 ;; ----------------------------------------------------------------
 ;; projectによってモードラインの色を変える

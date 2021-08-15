@@ -63,6 +63,10 @@
 (defvar system-windows-p (or (eq system-type 'windows-nt)
                              (eq system-type 'cygwin)))
 
+(if system-darwin-p
+    (if-let ((dir (search-file-for-downdir "/usr/local/Cellar/llvm" "clangd")))
+        (setq exec-path (cons dir exec-path))))
+
 (defvar c-mode-company-use-lsp (cond ((executable-find "clangd")
                                       'clangd)
                                      ((executable-find "ccls")
@@ -75,9 +79,6 @@
 
 (defvar theme-selection 'doom)
 
-(if system-darwin-p
-    (if-let ((dir (search-file-for-downdir "/usr/local/Cellar/llvm" "clangd")))
-        (setq exec-path (cons dir exec-path))))
 
 ;;
 (set-language-environment 'Japanese)
@@ -389,7 +390,15 @@
   :if (eq theme-selection 'doom)
   :ensure t
   :custom-face
-  (yas-field-highlight-face . '((t (:inherit match :inverse-video t))))
+  ((yas-field-highlight-face . '((t (:inherit match :inverse-video t))))
+   ;; 選択バッファをわかりやすく表示
+   (mode-line . '((t (:foreground "black" :background "orange"))))
+   (mode-line-buffer-id . '((t (:foreground nil :background nil))))
+   (mode-line-inactive . '((t (:foreground "gray50" :background "gray85"))))
+   (header-line . '((t (:foreground "#51afef" :background "#505662"))))
+   ;; elispでのcompletion-at-point での選択表示が分かりにくいので変更
+   (ivy-current-match . '((t :background "#1a4b77" :foreground "white"  t :extend t))))
+
   :custom
   ;; Global settings (defaults)
   ((doom-themes-enable-bold . t)    ; if nil, bold is universally disabled
@@ -419,7 +428,6 @@
   (add-hook 'buffer-list-update-hook 'highlight-selected-window))
 
 
-
 (leaf nano
   :if (eq theme-selection 'nano)
   :straight
@@ -427,12 +435,6 @@
   :config
   (require 'nano))
 
-;; 選択バッファをわかりやすく表示
-(custom-set-faces
- '(mode-line ((t (:foreground "black" :background "orange"))))
- '(mode-line-buffer-id ((t (:foreground nil :background nil))))
- '(mode-line-inactive ((t (:foreground "gray50" :background "gray85"))))
- '(header-line ((t (:foreground "#51afef" :background "#505662")))))
 
 (leaf all-the-icons
   :ensure t
@@ -510,85 +512,80 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; gtags
 ;; ----------------------------------------------------------------
-(use-package gtags
-  :disabled
+;; 追加のtag search path
+(setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
+
+(leaf gtags
+  :if (not narrowing-system)
   :commands (gtags-mode)
   :init
   ;; to use gtags.el that shipped with gtags
   (let* ((_exec-path (replace-regexp-in-string ".exe" "" (executable-find "gtags")))
          (elisp-path (replace-regexp-in-string "/bin/" "/share/" _exec-path)))
     (add-to-list 'load-path elisp-path))
+  :hook
+  (c-mode-common-hook . (lambda() (if (search-file-for-updir  buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
+                                      (gtags-mode 1))))
+  :config
   (setq gtags-path-style 'relative)
-  (add-hook 'c-mode-common-hook '(lambda() (if (search-file-for-updir  buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
-                                               (gtags-mode 1))))
   (setq-default gtags-ignore-case nil)
   (setq gtags-auto-update 1)            ; gtags セーブでアップデート
   (defun my-select-tag-other-window ()
     (save-excursion (gtags-select-tag-other-window)))
-  ;; 追加のtag search path
-  (setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
-  :bind ( :map gtags-mode-map
-               ("M-?" . gtags-find-rtag)
-               ("M-." . gtags-find-tag)
-               ("M-g s" . gtags-find-symbol)
-               ("M-g g" . gtags-find-pattern)
-               ("M-g f" . gtags-find-file)
-               ("M-," . gtags-pop-stack)
-               ("M-*" . gtags-pop-stack)
-               ("C-j" . my-select-tag-other-window)))
+  :bind (gtags-mode-map
+         ("M-?" . gtags-find-rtag)
+         ("M-." . gtags-find-tag)
+         ("M-g s" . gtags-find-symbol)
+         ("M-g g" . gtags-find-pattern)
+         ("M-g f" . gtags-find-file)
+         ("M-," . gtags-pop-stack)
+         ("M-*" . gtags-pop-stack)
+         ("C-j" . my-select-tag-other-window)))
 
-(use-package helm-gtags
+(leaf helm-gtags
   :if (eq narrowing-system 'helm)
   :ensure t
-  :commands (helm-gtags-mode)
-  :init
-  (add-hook 'c-mode-common-hook '(lambda() (if (search-file-for-updir  buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
-                                               (helm-gtags-mode 1))))
+  :hook
+  (c-mode-common-hook . (lambda() (if (search-file-for-updir  buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
+                                      (helm-gtags-mode 1))))
   :custom
-  (helm-gtags-ignore-case nil)
-  (helm-gtags-auto-update 1)            ; gtags セーブでアップデート
-  (helm-gtags-path-style 'relative)
+  ((helm-gtags-ignore-case . nil)
+   (helm-gtags-auto-update . 1)            ; gtags セーブでアップデート
+   (helm-gtags-path-style . 'relative))
 
-  ;; 追加のtag search path
-  (setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
-  :bind ( :map helm-gtags-mode-map
-               ("M-?" . helm-gtags-find-rtag)
-               ("M-." . helm-gtags-find-tag)
-               ("M-g s" . helm-gtags-find-symbol)
-               ("M-g g" . helm-gtags-find-pattern)
-               ("M-g f" . helm-gtags-find-files)
-               ("M-," . helm-gtags-pop-stack)
-               ("M-*" . helm-gtags-pop-stack)
-               ("C-j" . helm-gtags-select-tag-other-window)))
+  :bind (helm-gtags-mode-map
+         ("M-?" . helm-gtags-find-rtag)
+         ("M-." . helm-gtags-find-tag)
+         ("M-g s" . helm-gtags-find-symbol)
+         ("M-g g" . helm-gtags-find-pattern)
+         ("M-g f" . helm-gtags-find-files)
+         ("M-," . helm-gtags-pop-stack)
+         ("M-*" . helm-gtags-pop-stack)
+         ("C-j" . helm-gtags-select-tag-other-window)))
 
-(use-package counsel-gtags
+(leaf counsel-gtags
   :if (eq narrowing-system 'ivy)
   :ensure t
-  :commands (counsel-gtags-mode)
-  :init
-  (add-hook 'c-mode-common-hook '(lambda() (if (search-file-for-updir  buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
-                                               (counsel-gtags-mode 1))))
+  :hook
+  (c-mode-common-hook . (lambda() (if (search-file-for-updir  buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
+                                      (counsel-gtags-mode 1))))
   :custom
-  (counsel-gtags-ignore-case nil)
-  (counsel-gtags-update-interval-second nil)            ; gtags セーブでアップデート
-  (counsel-gtags-path-style 'relative)
+  ((counsel-gtags-ignore-case . nil)
+   (counsel-gtags-update-interval-second . nil)            ; gtags セーブでアップデート
+   (counsel-gtags-path-style . 'relative))
 
-  ;; 追加のtag search path
-  (setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
-  :bind ( :map counsel-gtags-mode-map
-               ("M-?" . counsel-gtags-find-reference)
-               ("M-." . counsel-gtags-find-definition)
-               ("M-g s" . counsel-gtags-find-symbol)
-               ("M-g f" . counsel-gtags-find-file)
-               ("M-," . counsel-gtags-go-backward)
-               ("M-*" . counsel-gtags-go-backward)))
-
-
+  :bind (counsel-gtags-mode-map
+         ("M-?" . counsel-gtags-find-reference)
+         ("M-." . counsel-gtags-find-definition)
+         ("M-g s" . counsel-gtags-find-symbol)
+         ("M-g f" . counsel-gtags-find-file)
+         ("M-," . counsel-gtags-go-backward)
+         ("M-*" . counsel-gtags-go-backward)))
 
 ;; ----------------------------------------------------------------
 ;;  for SLIME
 ;; ----------------------------------------------------------------
-(use-package slime
+(leaf slime
   :if (executable-find "sbcl")
   :ensure t
   :config
@@ -605,172 +602,147 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; helm
 ;; ----------------------------------------------------------------
-(use-package helm
+(leaf helm
   :if (eq narrowing-system 'helm)
   :ensure t
-  :init
   :bind (("C-x C-f" . helm-find-files)
          ("C-x b" . helm-for-files)
          ("M-y" . helm-show-kill-ring)
          ("M-x" . helm-M-x)
-         :map helm-map
-         ("<tab>" . helm-execute-persistent-action) ; rebind tab to run persistent action
-         )
+         (helm-map
+          ("<tab>" . helm-execute-persistent-action))) ; rebind tab to run persistent action
   :config
   (require 'helm-config))
 
 ;; ----------------------------------------------------------------
 ;; ivy
 ;; ----------------------------------------------------------------
-(use-package counsel
+(leaf counsel
   :if (eq narrowing-system 'ivy)
   :ensure t
   :bind (("C-x C-f" . counsel-find-file)
          ("C-x b" . ivy-switch-buffer)
-         ("M-y" . counsel-yank-pop)
+;         ("M-y" . counsel-yank-pop)
          ("M-x" . counsel-M-x)
          ("C-c j" . counsel-imenu))
-  :config
-  (custom-set-faces
-   ;; elispでのcompletion-at-point での選択表示が分かりにくいので変更
-   '(ivy-current-match
-     ((t :background "#1a4b77" :foreground "white"  t :extend t)))
-   )
-   :custom
+  :custom
+  (
    ;; `ivy-switch-buffer' (C-x b) のリストに recent files と bookmark を含める．
-  (ivy-use-virtual-buffers t)
-  (ivy-virtual-abbreviate 'full)
-  ;; デフォルトで入力される ^ 前方マッチ記号を非表示
-  (ivy-initial-inputs-alist
-   '((org-agenda-refile . "^")
-     (org-capture-refile . "^")
-     ;; (counsel-M-x . "^") ;; 削除．必要に応じて他のコマンドも除外する．
-     ;;(counsel-describe-function . "^")
-     ;;(counsel-describe-variable . "^")
-     (Man-completion-table . "^")
-     (woman . "^")))
-  (lsp-imenu-sort-methods '(position))
-  )
-
-(use-package smex
-  :if (eq narrowing-system 'ivy)
-  :ensure t
+   (ivy-use-virtual-buffers . t)
+   (ivy-virtual-abbreviate . 'full)
+   ;; デフォルトで入力される ^ 前方マッチ記号を非表示
+   (ivy-initial-inputs-alist . '((org-agenda-refile . "^")
+				 (org-capture-refile . "^")
+				 ;; (counsel-M-x . "^") ;; 削除．必要に応じて他のコマンドも除外する．
+				 ;;(counsel-describe-function . "^")
+				 ;;(counsel-describe-variable . "^")
+				 (Man-completion-table . "^")
+				 (woman . "^")))
+   (lsp-imenu-sort-methods . '(position)))
   :config
-  (setq smex-history-length 35)
-  (setq smex-completion-method 'ivy))
+  (leaf smex
+    :ensure t
+    :custom
+    ((smex-history-length . 35)
+     (smex-completion-method . 'ivy)))
 
-(use-package ivy-rich
-  :if (eq narrowing-system 'ivy)
-  :ensure t
-  :config
-  (ivy-rich-mode 1)
-  (setq ivy-rich-path-style 'abbrev)
+  (leaf ivy-rich
+    :ensure t
+    :custom
+    (ivy-rich-path-style . 'abbrev)
+    :config
+    (ivy-rich-mode 1)
 
-;; use buffer-file-name and list-buffers-directory instead of default-directory
-  ;; so that special buffers, e.g. *scratch* don't get a directory (we return nil in those cases)
-  (defun ivy-rich--switch-buffer-directory (candidate)
-    "Return directory of file visited by buffer named CANDIDATE, or nil if no file."
-    (let* ((buffer (get-buffer candidate))
-           (fn (buffer-file-name buffer)))
-      ;; if valid filename, i.e. buffer visiting file:
-      (if fn
-          ;; return containing directory
-          (directory-file-name fn)
-        ;; else if mode explicitly offering list-buffers-directory, return that; else nil.
-        ;; buffers that don't explicitly visit files, but would like to show a filename,
-        ;; e.g. magit or dired, set the list-buffers-directory variable
-        (buffer-local-value 'list-buffers-directory buffer))))
-  ;; override ivy-rich project root finding to use FFIP or to skip completely
-  (defun ivy-rich-switch-buffer-root (candidate)
-    ;; 1. changed let* to when-let*; if our directory func above returns nil,
-    ;;    we don't want to try and find project root
-    (when-let* ((dir (ivy-rich--switch-buffer-directory candidate)))
-      (unless (or (and (file-remote-p dir)
-                       (not ivy-rich-parse-remote-buffer))
-                  ;; Workaround for `browse-url-emacs' buffers , it changes
-                  ;; `default-directory' to "http://" (#25)
-                  (string-match "https?://" dir))
-        (cond
-         ;; 2. replace the project-root-finding
-         ;; a. add FFIP for projectile-less project-root finding (on my setup much faster) ...
-         ((require 'find-file-in-project nil t)
-          (let ((default-directory dir))
-            (ffip-project-root)))
-         ;; b. OR disable project-root-finding altogether
-         (t "")
-         ((bound-and-true-p projectile-mode)
-          (let ((project (or (ivy-rich--local-values
-                              candidate 'projectile-project-root)
-                             (projectile-project-root dir))))
-            (unless (string= project "-")
-              project)))
-         ((require 'project nil t)
-          (when-let ((project (project-current nil dir)))
-            (car (project-roots project))))
-         )))))
+    ;; use buffer-file-name and list-buffers-directory instead of default-directory
+    ;; so that special buffers, e.g. *scratch* don't get a directory (we return nil in those cases)
+    (defun ivy-rich--switch-buffer-directory (candidate)
+      "Return directory of file visited by buffer named CANDIDATE, or nil if no file."
+      (let* ((buffer (get-buffer candidate))
+             (fn (buffer-file-name buffer)))
+	;; if valid filename, i.e. buffer visiting file:
+	(if fn
+            ;; return containing directory
+            (directory-file-name fn)
+          ;; else if mode explicitly offering list-buffers-directory, return that; else nil.
+          ;; buffers that don't explicitly visit files, but would like to show a filename,
+          ;; e.g. magit or dired, set the list-buffers-directory variable
+          (buffer-local-value 'list-buffers-directory buffer))))
+    ;; override ivy-rich project root finding to use FFIP or to skip completely
+    (defun ivy-rich-switch-buffer-root (candidate)
+      ;; 1. changed let* to when-let*; if our directory func above returns nil,
+      ;;    we don't want to try and find project root
+      (when-let* ((dir (ivy-rich--switch-buffer-directory candidate)))
+	(unless (or (and (file-remote-p dir)
+			 (not ivy-rich-parse-remote-buffer))
+                    ;; Workaround for `browse-url-emacs' buffers , it changes
+                    ;; `default-directory' to "http://" (#25)
+                    (string-match "https?://" dir))
+          (cond
+           ;; 2. replace the project-root-finding
+           ;; a. add FFIP for projectile-less project-root finding (on my setup much faster) ...
+           ((require 'find-file-in-project nil t)
+            (let ((default-directory dir))
+              (ffip-project-root)))
+           ;; b. OR disable project-root-finding altogether
+           (t "")
+           ((bound-and-true-p projectile-mode)
+            (let ((project (or (ivy-rich--local-values
+				candidate 'projectile-project-root)
+                               (projectile-project-root dir))))
+              (unless (string= project "-")
+		project)))
+           ((require 'project nil t)
+            (when-let ((project (project-current nil dir)))
+              (car (project-roots project))))
+         ))))))
 
 ;; ----------------------------------------------------------------
 ;; yasnippet
 ;; ----------------------------------------------------------------
-(use-package yasnippet
+(leaf yasnippet
   :ensure t
-  :init
-  (use-package yasnippet-snippets
+  :config
+  (leaf yasnippet-snippets
     :ensure t)
   :bind
   :mode ("emacs.+/snippets/" . snippet-mode)
+  :custom
+  ;; time_t<tab>などでsnippet展開しないようにする
+  (yas-key-syntaxes . '(yas-try-key-from-whitespace "w_.()" "w_." "w_"))
   :config
-  ; time_t<tab>などでsnippet展開しないようにする
-  (setq yas-key-syntaxes '(yas-try-key-from-whitespace "w_.()" "w_." "w_"))
   (yas-global-mode 1))
 
-(use-package helm-c-yasnippet
+(leaf helm-c-yasnippet
   :if (eq narrowing-system 'helm)
   :ensure t
-  :init
-  (setq helm-yas-space-match-any-greedy t)
-  :bind (("C-c y" . 'helm-yas-complete)))
+  :custom
+  (helm-yas-space-match-any-greedy . t)
+  :bind (("C-c y" . helm-yas-complete)))
 
-(use-package ivy-yasnippet
+(leaf ivy-yasnippet
   :if (eq narrowing-system 'ivy)
   :ensure t
   :init
-  :bind (("C-c y" . 'ivy-yasnippet)))
+  :bind (("C-c y" . ivy-yasnippet)))
 
 ;; ----------------------------------------------------------------
 ;; company
 ;; ----------------------------------------------------------------
-(use-package company
+(leaf company
   :ensure t
-  :init
-  (setq company-idle-delay nil) ; 自動補完をしない
-  :bind (("C-M-i" . 'company-complete)
-         :map company-active-map
-         ("C-n" . 'company-select-next)
-         ("C-p" . 'company-select-previous)
-         ("<tab>" . 'company-complete-selection))
+  :custom
+  (company-idle-delay . nil) ; 自動補完をしない
+  :bind (("C-M-i" . company-complete)
+         (company-active-map
+          ("C-n" . company-select-next)
+          ("C-p" . company-select-previous)
+          ("<tab>" . company-complete-selection)))
   :config
   (global-company-mode 1))
 
 ;; ----------------------------------------------------------------
 ;; irony
 ;; ----------------------------------------------------------------
-(use-package irony
-  :if (not c-mode-company-use-lsp)
-  :ensure t
-  :commands (irony-mode)
-  :init
-  (add-hook 'c++-mode-hook 'irony-mode)
-  (add-hook 'c-mode-hook 'irony-mode)
-  (add-hook 'objc-mode-hook 'irony-mode)
-  (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
-  ;; Only needed on Windows
-  (when system-windows-p (setq w32-pipe-read-delay 0))
-  :bind ( :map irony-mode-map
-               ([remap completion-at-point] . 'irony-completion-at-point-async)
-               ([remap complete-symbol] .     'irony-completion-at-point-async)))
-
-
 ;; Example .clang_complete file: >
 ;;  -DDEBUG
 ;;  -include ../config.h
@@ -778,47 +750,53 @@ With argument ARG, do this that many times."
 ;;  -I/usr/include/c++/4.5.3/
 ;;  -I/usr/include/c++/4.5.3/x86_64-slackware-linux/
 ;; <
-
-;; ----------------------------------------------------------------
-;; compamy irony
-;; ----------------------------------------------------------------
-(use-package company-irony
+(leaf irony
   :if (not c-mode-company-use-lsp)
   :ensure t
-  :init
-  (eval-after-load 'company
-    '(add-to-list 'company-backends 'company-irony)))
+  :hook
+  (c++-mode-hook . irony-mode)
+  (c-mode-hook . irony-mode)
+  (objc-mode-hook . irony-mode)
+  (irony-mode-hook . irony-cdb-autosetup-compile-options)
+  ;; Only needed on Windows
+  :config
+  (when system-windows-p (setq w32-pipe-read-delay 0))
 
-;; ----------------------------------------------------------------
-;; company-irony-c-headers
-;; ----------------------------------------------------------------
-(use-package company-irony-c-headers
-  :if (not c-mode-company-use-lsp)
-  :ensure t
-  :init
-  (eval-after-load 'company
-    '(add-to-list
-      'company-backends '(company-irony-c-headers company-irony))))
+  ;; ----------------------------------------------------------------
+  ;; compamy irony
+  ;; ----------------------------------------------------------------
+  (leaf company-irony
+    :ensure t
+    :after company
+    :config
+    (add-to-list 'company-backends 'company-irony))
 
-;; ----------------------------------------------------------------
-;; irony eldoc
-;; ----------------------------------------------------------------
-(use-package irony-eldoc
-  :if (not c-mode-company-use-lsp)
-  :ensure t
-  :hook irony-mode)
+  ;; ----------------------------------------------------------------
+  ;; company-irony-c-headers
+  ;; ----------------------------------------------------------------
+  (leaf company-irony-c-headers
+    :ensure t
+    :after company
+    :config
+    (add-to-list 'company-backends 'company-irony-c-headers))
+
+  ;; ----------------------------------------------------------------
+  ;; irony eldoc
+  ;; ----------------------------------------------------------------
+  (leaf irony-eldoc
+    :ensure t
+    :hook irony-mode-hook))
 
 ;; ----------------------------------------------------------------
 ;; company tabnine
 ;; ----------------------------------------------------------------
 ;; to install binary M-x company-tabnine-install-binary
-(use-package company-tabnine
-  :disabled
+(leaf company-tabnine
+  :disabled t
   :ensure t
-  :init
-  (eval-after-load 'company
-    '(add-to-list
-      'company-backends 'company-tabnine)))
+  :after company
+  :config
+  (add-to-list 'company-backends 'company-tabnine))
 
 ;; ----------------------------------------------------------------
 ;; aspell
@@ -874,17 +852,6 @@ With argument ARG, do this that many times."
 (setq sdic-default-coding-system 'utf-8-unix)
 
 ;; ----------------------------------------------------------------
-;; color-moccur  (ELPA)
-;; ----------------------------------------------------------------
-(use-package color-moccur
-  :ensure t
-  :defer t
-  :bind (("M-o" . occur-by-moccur))
-  :init
-  :config
-  (require 'moccur-edit))
-
-;; ----------------------------------------------------------------
 ;; flycheck
 ;; ----------------------------------------------------------------
 (leaf flycheck
@@ -895,22 +862,20 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; flycheck-irony
 ;; ----------------------------------------------------------------
-(use-package flycheck-irony
+(leaf flycheck-irony
   :if (not c-mode-company-use-lsp)
   :ensure t
-  :init
-  (eval-after-load 'flycheck
-  '(progn
-     (flycheck-irony-setup)
-     (flycheck-add-next-checker 'irony 'c/c++-clang))))
+  :after flycheck
+  :config
+  (flycheck-irony-setup)
+  (flycheck-add-next-checker 'irony 'c/c++-clang))
 
-(use-package flycheck-clang-analyzer
-  :disabled                             ; rusticと愛性悪い
+(leaf flycheck-clang-analyzer
+  :disabled t                             ; rusticと愛性悪い
   :ensure t
-  :init
-  (eval-after-load 'flycheck
-  '(progn
-     (flycheck-clang-analyzer-setup))))
+  :after flycheck
+  :config
+  (flycheck-clang-analyzer-setup))
 
 ;; ----------------------------------------------------------------
 ;; shell
@@ -931,21 +896,19 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; migemo
 ;; ----------------------------------------------------------------
-(use-package migemo
+(leaf migemo
   :if (executable-find "cmigemo")
   :ensure t
-  :init
-  (let* ((_exec-path (replace-regexp-in-string "/bin/cmigemo" "/share/migemo/utf-8/migemo-dict" (executable-find "cmigemo")))
-         (dict-path (replace-regexp-in-string ".exe" "" _exec-path)))
-    (setq migemo-command "cmigemo")
-    (setq migemo-options '("-q" "--emacs"))
-
-    ;; Set your installed path
-    (setq migemo-dictionary dict-path)
-
-    (setq migemo-user-dictionary nil)
-    (setq migemo-regex-dictionary nil)
-    (setq migemo-coding-system 'utf-8-unix))
+  :require t
+  :custom
+  ((migemo-command . "cmigemo")
+   (migemo-options . '("-q" "--emacs"))
+   (migemo-dictionary . `,(let* ((_exec-path (replace-regexp-in-string "/bin/cmigemo" "/share/migemo/utf-8/migemo-dict" (executable-find "cmigemo")))
+			       (dict-path (replace-regexp-in-string ".exe" "" _exec-path)))
+			  dict-path))
+   (migemo-user-dictionary . nil)
+   (migemo-regex-dictionary . nil)
+   (migemo-coding-system . 'utf-8-unix))
   :config
   (migemo-init)
   ;; [migemo]isearch のとき IME を英数モードにする
@@ -956,19 +919,20 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; highlight symbol
 ;; ----------------------------------------------------------------
-(use-package highlight-symbol
+(leaf highlight-symbol
   :ensure t
-  :init
-  (add-hook 'prog-mode-hook 'highlight-symbol-mode)
-  (add-hook 'prog-mode-hook 'highlight-symbol-nav-mode) ; ソースコードにおいてM-p/M-nでシンボル間を移動
-  (setq highlight-symbol-idle-delay 1.0)  ;1秒後自動ハイライトされるようになる
+  :hook
+  (prog-mode-hook . highlight-symbol-mode)
+  (prog-mode-hook . highlight-symbol-nav-mode) ; ソースコードにおいてM-p/M-nでシンボル間を移動
+  :custom
+  (highlight-symbol-idle-delay . 1.0)  ;1秒後自動ハイライトされるようになる
   :bind (("M-g h" . highlight-symbol-at-point)          ; ポイント位置のシンボルをハイライト
          ("M-g q" . highlight-symbol-query-replace)))
 
 ;; ----------------------------------------------------------------
 ;; beacon
 ;; ----------------------------------------------------------------
-(use-package beacon
+(leaf beacon
   :ensure t
   :init
   (beacon-mode 1))
@@ -976,14 +940,12 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; scheme (gauche)
 ;; ----------------------------------------------------------------
-(use-package gauche-mode
-  :mode
-  (("\\.scm$" . gauche-mode))
-  :init
+(leaf gauche-mode
+  :mode  (("\\.scm$" . gauche-mode))
+  :config
   (setq scheme-program-name (executable-find "gosh"))
-  (setq file-coding-system-alist
-      (cons '("gauche-refj\\.info.*\\'" utf-8 . utf-8)
-            file-coding-system-alist))
+  (setq file-coding-system-alist (cons '("gauche-refj\\.info.*\\'" utf-8 . utf-8)
+				       file-coding-system-alist))
   (defun scheme-other-window ()
     "Run scheme on other window"
     (interactive)
@@ -991,23 +953,25 @@ With argument ARG, do this that many times."
      (get-buffer-create "*scheme*"))
     (run-scheme scheme-program-name))
   :bind
-  (("\C-cs" . 'scheme-other-window)))
+  (("C-c g" . scheme-other-window)))
 
 ;; ----------------------------------------------------------------
 ;; kahua
 ;; ----------------------------------------------------------------
-(use-package kahua
+(leaf kahua
   :mode (("\\.kahua$" . kahua-mode))
-  :init (setq kahua-site-bundle (expand-file-name "~/work/kahua/site")))
+  :config
+  (setq kahua-site-bundle (expand-file-name "~/work/kahua/site")))
 
 ;; ----------------------------------------------------------------
 ;; google translate
 ;; ----------------------------------------------------------------
-(use-package google-translate
+(leaf google-translate
   :ensure t
-  :defer t
   :commands (google-translate-translate)
-  :init
+  :bind ("C-M-t". google-translate-enja-or-jaen)
+  :custom (google-translate-backend-method . 'curl)
+  :config
   (defvar google-translate-english-chars "[:ascii:]"
     "これらの文字が含まれているときは英語とみなす")
   (defun google-translate-enja-or-jaen (&optional string)
@@ -1029,35 +993,17 @@ With argument ARG, do this that many times."
        (if asciip "en" "ja")
        (if asciip "ja" "en")
        string)))
-  :bind ("C-M-t". 'google-translate-enja-or-jaen)
-  :custom
-  (google-translate-backend-method 'curl)
-  :config
+
   ;; To fix error: google-translate--search-tkk: Search failed: ",tkk:'"
   ;; https://github.com/atykhonov/google-translate/issues/52#issuecomment-727920888
-  (defun google-translate--search-tkk () "Search TKK." (list 430675 2721866130))
-  (require 'google-translate-default-ui)
-  (use-package popwin
+    (eval-after-load 'google-translate-tk
+      '(defun google-translate--search-tkk () "Search TKK." (list 430675 2721866130)))
+  (leaf popwin
     :ensure t
-    :config
+    :require t  ; need for append popwin:special-display-config
+    :custom
     (push '("\*Google Translate\*" :height 0.5 :stick t) popwin:special-display-config)))
     
-;; ----------------------------------------------------------------
-;; rust
-;; ----------------------------------------------------------------
-(use-package rust-mode
-  :ensure t
-  :after lsp-mode
-  :custom
-  (rust-format-on-save t)
-  (lsp-rust-server 'rust-analyzer)
-  :hook
-  (rust-mode . lsp))
-
-(use-package cargo
-  :ensure t
-  :hook (rust-mode . cargo-minor-mode))
-
 ;; ----------------------------------------------------------------
 ;; projectによってモードラインの色を変える
 ;; ----------------------------------------------------------------
@@ -1151,16 +1097,26 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; swift
 ;; ----------------------------------------------------------------
-(use-package lsp-sourcekit
+(leaf lsp-sourcekit
   :ensure t
-  :after lsp-mode
+  :custom
+  (lsp-sourcekit-executable . `,(string-trim (shell-command-to-string "xcrun --find sourcekit-lsp")))
   :config
-  (setq lsp-sourcekit-executable (string-trim (shell-command-to-string "xcrun --find sourcekit-lsp"))))
+  (leaf swift-mode
+    :ensure t
+    :hook (swift-mode-hook . lsp)))
 
-(use-package swift-mode
+;; ----------------------------------------------------------------
+;; rust
+;; ----------------------------------------------------------------
+(leaf rustic
   :ensure t
-  :hook (swift-mode . (lambda () (lsp))))
-
+  :custom
+  :hook (rust-mode . lsp)
+  :config
+  (leaf cargo
+    :ensure t
+    :hook (rust-mode . cargo-minor-mode)))
 
 ;; ----------------------------------------------------------------
 ;; C-mode stuct enum の中ではコメントはdoxgenの後述コメントを使う
@@ -1192,19 +1148,17 @@ With argument ARG, do this that many times."
     
 ;; ----------------------------------------------------------------
 ;; DAP
+;;  to start debugging M-x dap-debug
 ;; ----------------------------------------------------------------
-(use-package dap-mode
+(leaf dap-mode
   :if (executable-find "lldb-vscode")
   :ensure t
-  :after lsp-mode
   :custom
-  (dap-lldb-debug-program (list (executable-find "lldb-vscode")))
-  (dap-lldb-debugged-program-function '(lambda() (read-file-name "Select file to debug.")))
+  (dap-lldb-debug-program . `,(list (executable-find "lldb-vscode")))
+  (dap-lldb-debugged-program-function . '(lambda() (read-file-name "Select file to debug.")))
+  (dap-auto-configure-features . '(sessions locals controls tooltip))
   :config
-  (setq dap-auto-configure-features '(sessions locals controls tooltip))
   (require 'dap-lldb))
-  
-
 
 ;; ----------------------------------------------------------------
 ;;  git grep
@@ -1232,7 +1186,7 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;;  swiper
 ;; ----------------------------------------------------------------
-(use-package swiper
+(leaf swiper
   :ensure t
   :config
   (defun my-swiper-all-from-swiper ()
@@ -1256,26 +1210,28 @@ With argument ARG, do this that many times."
      (lambda (_)
        (swiper ivy-text))))
 
-  (setq ivy-re-builders-alist '((t . ivy--regex-ignore-order)))
+  :custom
+  (ivy-re-builders-alist . '((t . ivy--regex-ignore-order)))
 
   :bind
-  ("C-c s" . swiper-isearch-thing-at-point)
-  ("C-s" . isearch-forward)
-  ("<S-tab>" . counsel-rg)
-  (:map isearch-mode-map
-        ("C-j" . swiper-from-isearch))
-  (:map swiper-map
-        ("C-j" . my-swiper-all-from-swiper))
-  (:map swiper-all-map
-        ("C-j" . my-counsel-rg-from-swiper-all))
-  (:map counsel-ag-map
-        ("C-j" . my-swiper-from-counsel-rg)))
+  (("C-c s" . swiper-isearch-thing-at-point)
+   ("<S-tab>" . counsel-rg)
+   (isearch-mode-map
+    :package isearch
+    ("C-j" . swiper-from-isearch))
+   (swiper-map
+    ("C-j" . my-swiper-all-from-swiper))
+   (swiper-all-map
+    ("C-j" . my-counsel-rg-from-swiper-all))
+   (counsel-ag-map
+    :package counsel
+    ("C-j" . my-swiper-from-counsel-rg))))
 
 
 ;; ----------------------------------------------------------------
 ;;  camelcase snakecase
 ;; ----------------------------------------------------------------
-(use-package string-inflection
+(leaf string-inflection
   :ensure t
   :config
   (defun my-string-inflection-cycle-auto ()

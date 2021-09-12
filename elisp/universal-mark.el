@@ -168,6 +168,9 @@ Borrows code from `pop-global-mark'."
 Optional argument ARGS completely ignored"
   (universal-mark-push-mark (point-marker)))
 
+(defun universal-mark-advice-add (func)
+  (advice-add func :before #'universal-mark-push-mark-wrapper))
+
 (provide 'universal-mark)
 
 ;;; universal-mark.el ends here

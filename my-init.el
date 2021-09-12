@@ -319,10 +319,10 @@
 
 ;;(setq Info-directory-list (list "/sw/share/info" "/sw/info" "/usr/share/info" "~/local/info" "~/local/share/info"))
 ;;(setq Info-additional-directory-list (list "/Applications/MacPorts/Emacs.app/Contents/Resources/info"))
-(setq Info-directory-list (list "/Applications/MacPorts/Emacs.app/Contents/Resources/info"
-				"/Users/masami/local/info"
-				"/Users/masami/local/share/info"
-				"/opt/local/share/info"))
+;;(setq Info-directory-list (list "/Applications/MacPorts/Emacs.app/Contents/Resources/info"
+;;				"/Users/masami/local/info"
+;;				"/Users/masami/local/share/info"
+;;				"/opt/local/share/info"))
  
 (global-set-key "\M-l" 'goto-line)
 (global-set-key "\C-xc" 'compile)
@@ -1161,27 +1161,12 @@ With argument ARG, do this that many times."
   (require 'dap-lldb))
 
 ;; ----------------------------------------------------------------
-;;  git grep
-;; ----------------------------------------------------------------
-(use-package helm-git-grep
-  :if (eq narrowing-system 'helm)
-  :ensure t
-  :bind ( "<S-tab>" . (lambda ()
-                        (interactive)                 
-                        (xref-push-marker-stack)
-                        (helm-git-grep))))
-
-
-;; ----------------------------------------------------------------
 ;;  ace jump
 ;; ----------------------------------------------------------------
-(use-package ace-jump-mode
+(leaf ace-jump-mode
   :ensure t
   :bind
-  ("C-c SPC" . (lambda (&optional prefix)
-                 (interactive "p")
-                 (xref-push-marker-stack)
-                 (ace-jump-mode prefix))))
+  ("C-c SPC" . ace-jump-mode))
 
 ;; ----------------------------------------------------------------
 ;;  swiper
@@ -1259,16 +1244,21 @@ With argument ARG, do this that many times."
   :bind
   ("M-u" . my-string-inflection-cycle-auto))
   
-(use-package universal-mark
-  :commands (universal-mark-mode)
-  :after swiper
+;; ----------------------------------------------------------------
+;;  universal mark
+;; ----------------------------------------------------------------
+(leaf universal-mark
+  :commands universal-mark-mode
   :init
   (universal-mark-mode t)
   :config
-  (advice-add 'isearch-forward :before #'universal-mark-push-mark-wrapper)
-  (advice-add 'swiper-isearch-thing-at-point :before #'universal-mark-push-mark-wrapper)
-  (advice-add 'swiper-all-thing-at-point :before #'universal-mark-push-mark-wrapper)
-  (advice-add 'counsel-rg :before #'universal-mark-push-mark-wrapper)
+  (universal-mark-advice-add 'isearch-forward)
+  (universal-mark-advice-add 'isearch-backward)
+  (eval-after-load 'swiper '(progn
+			      (universal-mark-advice-add 'swiper-isearch-thing-at-point)
+			      (universal-mark-advice-add 'swiper-all-thing-at-point )))
+  (eval-after-load 'cousel '(universal-mark-advice-add 'counsel-rg ))
+  (eval-after-load 'ace-jump-mode '(universal-mark-advice-add 'ace-jump-mode ))
   :bind
   ("M-," . universal-mark-previous-location)
   )
@@ -1305,7 +1295,4 @@ With argument ARG, do this that many times."
 (global-set-key "\C-x2" 'my/split-window)
 (global-set-key "\C-x0" 'my/delete-window)
   
-
-
-
 

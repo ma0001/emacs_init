@@ -84,12 +84,12 @@
 (set-language-environment 'Japanese)
 (if system-windows-p
     (progn
-      ;;    (prefer-coding-system 'utf-8-with-signature-dos)
       (prefer-coding-system 'utf-8-dos)
-      (set-file-name-coding-system 'cp932)
-      (set-keyboard-coding-system 'cp932)
-      (set-terminal-coding-system 'cp932)
-      (set-default 'buffer-file-coding-system 'utf-8-with-signature-dos))
+;      (set-file-name-coding-system 'cp932)
+;      (set-keyboard-coding-system 'cp932)
+      (set-terminal-coding-system 'utf-8)
+      (set-default 'buffer-file-coding-system 'utf-8-with-signature-dos)
+      )
   (prefer-coding-system 'utf-8-unix))
   
 
@@ -477,8 +477,14 @@
     :query ask
     :format regexp
     :files "everything"
-    :dir project
-  ))
+    :dir ask)
+  (rg-define-search search-everything-at-current
+    "Search files everything in project directory"
+    :query ask
+    :format regexp
+    :files "everything"
+    :dir current)
+  )
 
 ;; ----------------------------------------------------------------
 ;; lightning-paren
@@ -1068,6 +1074,7 @@ With argument ARG, do this that many times."
   (lsp-ui-sideline-show-hover t)
   (lsp-ui-sideline-show-diagnostics t)
   (lsp-ui-sideline-show-code-actions t)
+  (lsp-ui-sideline-diagnostic-max-lines 3)
   
   ;; lsp-ui-imenu
   (lsp-ui-imenu-enable nil)

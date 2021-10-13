@@ -88,6 +88,7 @@
 ;      (set-file-name-coding-system 'cp932)
 ;      (set-keyboard-coding-system 'cp932)
       (set-terminal-coding-system 'utf-8)
+      (set-coding-system-priority 'utf-8)
       (set-default 'buffer-file-coding-system 'utf-8-with-signature-dos)
       )
   (prefer-coding-system 'utf-8-unix))
@@ -327,6 +328,9 @@
 (global-set-key "\M-l" 'goto-line)
 (global-set-key "\C-xc" 'compile)
 (global-set-key "\M-ga" 'align-regexp)
+
+(global-unset-key "\C-t")
+(global-unset-key "\M-t")
 
 ;; disable drag and drop in dired-mode
 (setq dired-dnd-protocol-alist nil)
@@ -1174,6 +1178,14 @@ With argument ARG, do this that many times."
   :ensure t
   :bind
   ("C-c SPC" . ace-jump-mode))
+
+;; ----------------------------------------------------------------
+;;  ace jump zap
+;; ----------------------------------------------------------------
+(leaf ace-jump-zap
+  :ensure t
+  :bind
+  ("M-z" . ace-jump-zap-to-char))
 
 ;; ----------------------------------------------------------------
 ;;  swiper

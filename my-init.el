@@ -22,6 +22,8 @@
 
 (add-to-list 'load-path "~/.emacs.d/elisp")
 
+(setq package-check-signature nil)
+
 ;; ----------------------------------------------------------------
 ;; utility function
 ;; ----------------------------------------------------------------
@@ -1012,7 +1014,10 @@ With argument ARG, do this that many times."
     :ensure t
     :require t  ; need for append popwin:special-display-config
     :custom
-    (push '("\*Google Translate\*" :height 0.5 :stick t) popwin:special-display-config)))
+    (push '("\*Google Translate\*" :height 0.5 :stick t) popwin:special-display-config))
+  (leaf popup
+    :ensure t))
+
     
 ;; ----------------------------------------------------------------
 ;; projectによってモードラインの色を変える
@@ -1314,4 +1319,10 @@ With argument ARG, do this that many times."
 (global-set-key "\C-x2" 'my/split-window)
 (global-set-key "\C-x0" 'my/delete-window)
   
-
+;; ----------------------------------------------------------------
+;;  editor config
+;; ----------------------------------------------------------------
+(leaf editorconfig
+  :ensure t
+  :config
+  (editorconfig-mode 1))

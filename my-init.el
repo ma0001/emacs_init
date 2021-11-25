@@ -1295,6 +1295,26 @@ With argument ARG, do this that many times."
   :hook css-mode-hook less-mode-hook web-mode-hook html-mode-hook emacs-lisp-mode-hook)
 
 ;; ----------------------------------------------------------------
+;;  codic
+;; ----------------------------------------------------------------
+(leaf codic
+  :ensure t
+  )
+;; ----------------------------------------------------------------
+;;  python
+;;    To install lsp server "pip install 'python-language-server[all]'"
+;;    Open an .ipynb file, press C-c C-o, or,
+;;    M-x ein:run launches a jupyter process from emacs
+;; ----------------------------------------------------------------
+(leaf ein
+  :ensure t
+  :custom
+  (ein:output-area-inlined-images . t)
+  :custom-face
+  (ein:cell-output-area . `((t (:background "wheat"))))
+  )
+  
+;; ----------------------------------------------------------------
 ;;  arg付きのsplit-windowやother-windowは別frameにする
 ;; ----------------------------------------------------------------
 (defun my/split-window (&optional arg)

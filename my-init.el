@@ -1013,7 +1013,7 @@ With argument ARG, do this that many times."
   (leaf popwin
     :ensure t
     :require t  ; need for append popwin:special-display-config
-    :custom
+    :config
     (push '("\*Google Translate\*" :height 0.5 :stick t) popwin:special-display-config))
   (leaf popup
     :ensure t))
@@ -1033,19 +1033,19 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;;clangd : プロジェクトのTOPに空の .clangd を作成することによりtagが使用できる
 
-(use-package lsp-mode
+(leaf lsp-mode
   :ensure t
   :custom
-  (lsp-enable-snippet t)
-  (lsp-enable-indentation nil)
-  (lsp-enable-on-type-formatting nil)
-  (lsp-prefer-flymake nil)
-  (lsp-document-sync-method 2)
-  (lsp-inhibit-message t)
-  (lsp-message-project-root-warning t)
-  (create-lockfiles nil)
-  (lsp-prefer-capf  t)
-  (lsp-headerline-breadcrumb-enable nil)
+  ((lsp-enable-snippet . t)
+   (lsp-enable-indentation . nil)
+   (lsp-enable-on-type-formatting . nil)
+   (lsp-prefer-flymake . nil)
+   (lsp-document-sync-method . 2)
+   (lsp-inhibit-message . t)
+   (lsp-message-project-root-warning . t)
+   (create-lockfiles . nil)
+   (lsp-prefer-capf  . t)
+   (lsp-headerline-breadcrumb-enable . nil))
   :config
   (cond ((eq c-mode-company-use-lsp 'clangd)
          (setq lsp-clients-clangd-executable (executable-find "clangd"))
@@ -1053,61 +1053,59 @@ With argument ARG, do this that many times."
         ((eq c-mode-company-use-lsp 'ccls)
          (setq lsp-disabled-clients (list 'clangd))))
   :hook
-  (prog-major-mode . lsp-prog-major-mode-enable)
-  ((c-mode c++-mode objc-mode) . lsp))
+  (prog-major-mode-hook . lsp-prog-major-mode-enable)
+  (c-mode-common-hook . lsp))
 
 
-(use-package lsp-ui
+(leaf lsp-ui
   :ensure t
   :after lsp-mode
   :custom
   ;; lsp-ui-doc
-  (lsp-ui-doc-enable t)
-  (lsp-ui-doc-show-with-mouse t)
-  (lsp-ui-doc-show-with-cursor nil)
-  (lsp-ui-doc-header t)
-  (lsp-ui-doc-include-signature t)
-  (lsp-ui-doc-position 'top)
-  (lsp-ui-doc-max-width  60)
-  (lsp-ui-doc-max-height 20)
-  (lsp-ui-doc-use-childframe t)
-  (lsp-ui-doc-use-webkit nil)
+  ((lsp-ui-doc-enable . t)
+   (lsp-ui-doc-show-with-mouse . t)
+   (lsp-ui-doc-show-with-cursor . nil)
+   (lsp-ui-doc-header . t)
+   (lsp-ui-doc-include-signature . t)
+   (lsp-ui-doc-position . 'top)
+   (lsp-ui-doc-max-width  . 60)
+   (lsp-ui-doc-max-height . 20)
+   (lsp-ui-doc-use-childframe . t)
+   (lsp-ui-doc-use-webkit . nil)
+   
+   ;; lsp-ui-flycheck
+   (lsp-ui-flycheck-enable . t)
+   
+   ;; lsp-ui-sideline
+   (lsp-ui-sideline-enable . t)
+   (lsp-ui-sideline-ignore-duplicate . t)
+   (lsp-ui-sideline-show-symbol . t)
+   (lsp-ui-sideline-show-hover . t)
+   (lsp-ui-sideline-show-diagnostics . t)
+   (lsp-ui-sideline-show-code-actions . t)
+   (lsp-ui-sideline-diagnostic-max-lines . 3)
+   
+   ;; lsp-ui-imenu
+   (lsp-ui-imenu-enable . nil)
+   (lsp-ui-imenu-kind-position . 'top)
+   
+   ;; lsp-ui-peek
+   (lsp-ui-peek-enable . t)
+   (lsp-ui-peek-always-show . t)
+   (lsp-ui-peek-peek-height . 30)
+   (lsp-ui-peek-list-width . 30)
+   (lsp-ui-peek-fontify . 'always))
   
-  ;; lsp-ui-flycheck
-  (lsp-ui-flycheck-enable t)
-  
-  ;; lsp-ui-sideline
-  (lsp-ui-sideline-enable t)
-  (lsp-ui-sideline-ignore-duplicate t)
-  (lsp-ui-sideline-show-symbol t)
-  (lsp-ui-sideline-show-hover t)
-  (lsp-ui-sideline-show-diagnostics t)
-  (lsp-ui-sideline-show-code-actions t)
-  (lsp-ui-sideline-diagnostic-max-lines 3)
-  
-  ;; lsp-ui-imenu
-  (lsp-ui-imenu-enable nil)
-  (lsp-ui-imenu-kind-position 'top)
-  
-  ;; lsp-ui-peek
-  (lsp-ui-peek-enable t)
-  (lsp-ui-peek-always-show t)
-  (lsp-ui-peek-peek-height 30)
-  (lsp-ui-peek-list-width 30)
-  (lsp-ui-peek-fontify 'always)
-  
-  :hook   (lsp-mode . lsp-ui-mode)
-  :bind ( :map lsp-ui-mode-map
-               ([remap xref-find-definitions] . 'lsp-ui-peek-find-definitions)
-               ([remap xref-find-references] . 'lsp-ui-peek-find-references)))
+  :hook   (lsp-mode-hook . lsp-ui-mode)
+  :bind ((lsp-ui-mode-map
+              ([remap xref-find-definitions] . 'lsp-ui-peek-find-definitions)
+              ([remap xref-find-references] . 'lsp-ui-peek-find-references))))
 
-(use-package ccls
+(leaf ccls
   :if (eq c-mode-company-use-lsp 'ccls)
   :ensure t
   :custom ((ccls-sem-highlight-method 'font-lock)
-           (ccls-use-default-rainbow-sem-highlight))
-  :hook
-  ((c-mode c++-mode objc-mode) . lsp))
+           (ccls-use-default-rainbow-sem-highlight)))
 
 
 ;; ----------------------------------------------------------------
@@ -1128,11 +1126,11 @@ With argument ARG, do this that many times."
 (leaf rustic
   :ensure t
   :custom
-  :hook (rust-mode . lsp)
+  :hook (rust-mode-hook . lsp)
   :config
   (leaf cargo
     :ensure t
-    :hook (rust-mode . cargo-minor-mode)))
+    :hook (rust-mode-hook . cargo-minor-mode)))
 
 ;; ----------------------------------------------------------------
 ;; C-mode stuct enum の中ではコメントはdoxgenの後述コメントを使う

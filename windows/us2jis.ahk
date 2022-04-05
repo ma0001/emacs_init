@@ -1,0 +1,21 @@
+*"::send, @
+*&::send, {^}
+*'::send, &
+*(::send, *
+*)::send, (
+*+0::send, )
+*=::send, _
+*^::send, =
+*~::send, {+}
+*@::send, [
+*`::send, {{}
+*[::send, ]
+*{::send, {}}
+*]::send, \
+*}::send, |
+*+::send, :
++*::send, "
+*vkBA::send, '
+VKF4::send, {``}
++VKF4::send,{~}
+!Space::Send, {vkF3sc029}

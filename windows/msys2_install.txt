@@ -21,6 +21,13 @@ mingw64/mingw-w64-x86_64-hunspell-en
 ■keyhac
 config.py を入れ替え
 
-■alt space でIME切り替え
+■PCの設定をJIS配列のままUSキーボードとして動作させる
 AutoHotKey
+us2jis.ahkで起動する
+
+・alt space でIME切り替え
 https://blog.goo.ne.jp/mocas_lab/e/3d1238365a243bb4614587076e159998
+!Space::Send, {vkF3sc029}
+
+
+

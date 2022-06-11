@@ -19,15 +19,11 @@ mingw64/mingw-w64-x86_64-hunspell-en
 
 
 ■keyhac
+PCの設定をJIS配列のままUSキーボードとして動作させる設定もしてあるのでwindows systemの設定は日本語キーボードのままにする
+・hhk の alt win の入れ替えは hhkのdipswで行うか、windows レジストリ書き換え（keyhacで入れ替えてもうまく動作しなかった）
+
 config.py を入れ替え
 
-■PCの設定をJIS配列のままUSキーボードとして動作させる
-AutoHotKey
-us2jis.ahkで起動する
-
-・alt space でIME切り替え
-https://blog.goo.ne.jp/mocas_lab/e/3d1238365a243bb4614587076e159998
-!Space::Send, {vkF3sc029}
 
 
 

@@ -896,14 +896,8 @@ With argument ARG, do this that many times."
  (system-darwin-p
   )
  (system-windows-p
-  (setq explicit-shell-file-name "bash.exe")
-  (setq shell-command-switch "-c")
-  (setq shell-file-name "bash.exe")
-  ;; (setq explicit-bash.exe-args '("--login" "-i"))
-
-  ;; (M-! and M-| and compile.el)
-  (setq shell-file-name "bash.exe")
-  (modify-coding-system-alist 'process ".*sh\\.exe" 'utf-8)))
+  ;; grep で日本語が検索できない修正、 msysでcall-processするときCreateProcessAでプロセス生成するので引数はSJISでないとだめみたい
+  (modify-coding-system-alist 'process ".*sh\\.exe" '(utf-8 . cp932))))
 
 ;; ----------------------------------------------------------------
 ;; migemo

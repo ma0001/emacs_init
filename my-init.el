@@ -226,7 +226,7 @@
     ;; C-\ でOSの入力モードを切り替える
     (defun my/toggle-input-method ()
       (interactive)
-      (message "my/toggle-input-method")
+      (message "my/toggle-input-method %s" (mac-input-source))
       (if (string-match "\\.Roman$" (mac-input-source))
 	  (progn
             (mac-select-input-source "com.apple.inputmethod.Kotoeri.RomajiTyping.Japanese"))
@@ -978,8 +978,7 @@ With argument ARG, do this that many times."
   :bind ("C-M-t". google-translate-enja-or-jaen)
   :custom (google-translate-backend-method . 'curl)
   :config
-  (defvar google-translate-english-chars "[:ascii:]"
-    "これらの文字が含まれているときは英語とみなす")
+  (defvar google-translate-english-chars "[:ascii:]"  "これらの文字が含まれているときは英語とみなす")
   (defun google-translate-enja-or-jaen (&optional string)
     "regionか現在位置の単語を翻訳する。C-u付きでquery指定も可能"
     (interactive)
@@ -1002,8 +1001,8 @@ With argument ARG, do this that many times."
 
   ;; To fix error: google-translate--search-tkk: Search failed: ",tkk:'"
   ;; https://github.com/atykhonov/google-translate/issues/52#issuecomment-727920888
-    (eval-after-load 'google-translate-tk
-      '(defun google-translate--search-tkk () "Search TKK." (list 430675 2721866130)))
+  (eval-after-load 'google-translate-tk
+    '(defun google-translate--search-tkk () "Search TKK." (list 430675 2721866130)))
   (leaf popwin
     :ensure t
     :require t  ; need for append popwin:special-display-config
@@ -1330,6 +1329,12 @@ With argument ARG, do this that many times."
 (global-set-key "\C-xo" 'my/other-window)
 (global-set-key "\C-x2" 'my/split-window)
 (global-set-key "\C-x0" 'my/delete-window)
+  
+;; ----------------------------------------------------------------
+;;  cmake
+;; ----------------------------------------------------------------
+(leaf cmake-mode
+  :ensure t)
   
 ;; ----------------------------------------------------------------
 ;;  editor config

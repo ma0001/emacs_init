@@ -947,6 +947,7 @@ With argument ARG, do this that many times."
 ;; scheme (gauche)
 ;; ----------------------------------------------------------------
 (leaf gauche-mode
+  :disabled t
   :mode  (("\\.scm$" . gauche-mode))
   :config
   (setq scheme-program-name (executable-find "gosh"))
@@ -960,6 +961,10 @@ With argument ARG, do this that many times."
     (run-scheme scheme-program-name))
   :bind
   (("C-c g" . scheme-other-window)))
+
+(leaf geiser-gauche
+  :ensure t)
+
 
 ;; ----------------------------------------------------------------
 ;; kahua

@@ -1348,3 +1348,20 @@ With argument ARG, do this that many times."
   :ensure t
   :config
   (editorconfig-mode 1))
+
+;; ----------------------------------------------------------------
+;;  ORG
+;; ----------------------------------------------------------------
+(global-set-key "\C-cc" 'org-capture)
+(setq org-capture-templates
+      '(("t" "TODO" entry (file+headline "~/work/Org/TODO.org" "Inbox")
+         "*** TODO %?\nEntered on %U\n %i\n %a")
+	("n" "Note" entry (file+headline "~/work/Org/notes.org" "Notes")
+         "* %?\nEntered on %U\n %i\n %a")
+        ))
+(global-set-key "\C-ca" 'org-agenda)
+(setq org-agenda-custom-commands
+      '(
+        ("o" . "Original agenda view") ; description for "o" prefix
+        ("ot" todo "TODO")
+        ))

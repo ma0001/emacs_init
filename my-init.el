@@ -1348,3 +1348,31 @@ With argument ARG, do this that many times."
         ("o" . "Original agenda view") ; description for "o" prefix
         ("ot" todo "TODO")
         ))
+
+;; ----------------------------------------------------------------
+;;  Copilot
+;; 	https://github.com/zerolfx/copilot.el
+;; ----------------------------------------------------------------
+(leaf copilot
+  :el-get "zerolfx/copilot.el"
+  :hook
+  (prog-mode-hook . copilot-mode)
+  :config
+  (defun my/copilot-tab ()
+    (interactive)
+    (if (copilot--overlay-visible)
+	;; completion表示中なら選択
+	(or (copilot-accept-completion)
+	    (indent-for-tab-command))
+      ;; completion表示中でなければcompletion表示
+      (copilot-complete)))
+      
+  :bind (copilot-mode-map
+         ("S-<tab>" . my/copilot-tab)
+	 ("C-c j" . my/copilot-tab)
+	 ("C-c n" . copilot-next-completion)
+	 ("C-c p" . copilot-previous-completion)
+	 ("C-c g" . copilot-abort-completion)))
+
+  
+  

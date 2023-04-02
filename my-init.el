@@ -1368,12 +1368,14 @@ With argument ARG, do this that many times."
       (copilot-complete)))
   (set-face-attribute 'copilot-overlay-face nil
 		      :underline "purple")
+  ;; ivy-yasnippetのオーバレイを消さないように、実行前にcopilotのオーバーレイを消す
+  (advice-add 'ivy-yasnippet :before #'copilot-clear-overlay)
   :bind (copilot-mode-map
          ("S-<tab>" . my/copilot-tab)
 	 ("C-c j" . my/copilot-tab)
 	 ("C-c n" . copilot-next-completion)
-	 ("C-c p" . copilot-previous-completion)
-	 ("C-c g" . copilot-abort-completion)))
+	 ("C-c p" . copilot-previous-completion)))
+
 
 ;; ----------------------------------------------------------------
 ;;  plantUML

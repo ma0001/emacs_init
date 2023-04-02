@@ -1366,7 +1366,8 @@ With argument ARG, do this that many times."
 	    (indent-for-tab-command))
       ;; completion表示中でなければcompletion表示
       (copilot-complete)))
-      
+  (set-face-attribute 'copilot-overlay-face nil
+		      :underline "purple")
   :bind (copilot-mode-map
          ("S-<tab>" . my/copilot-tab)
 	 ("C-c j" . my/copilot-tab)

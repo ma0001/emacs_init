@@ -1375,5 +1375,21 @@ With argument ARG, do this that many times."
 	 ("C-c p" . copilot-previous-completion)
 	 ("C-c g" . copilot-abort-completion)))
 
-  
-  
+;; ----------------------------------------------------------------
+;;  plantUML
+;; 	https://plantuml.com
+;; ----------------------------------------------------------------
+(leaf plantuml-mode
+  :ensure t
+  :config
+  (cond
+   ((executable-find "plantuml")
+    (setq plantuml-default-exec-mode 'executable))
+   ((file-exists-p "~/bin/plantuml.jar")
+    (setq plantuml-jar-path "~/bin/plantuml.jar")
+    (setq plantuml-default-exec-mode 'jar))
+   (t
+    (setq plantuml-default-exec-mode 'server)))
+  (setq plantuml-output-type "png"))
+
+

@@ -1398,18 +1398,16 @@ With argument ARG, do this that many times."
 ;;  openAI
 ;; 	https://github.com/emacs-openai
 ;; ----------------------------------------------------------------
-(prog1 'openai
-  (let
-      ((file
-	(leaf-this-file)))
-    (unless
-	(boundp 'leaf--paths)
-      (defvar leaf--paths nil))
-    (when file
-      (add-to-list 'leaf--paths
-		   (cons 'openai file))))
-  (leaf-handler-leaf-protect openai
-    (el-get-bundle "emacs-openai/openai")
-    (el-get-bundle "emacs-openai/chatgpt")))
+(leaf openai
+  :el-get "emacs-openai/openai"
+  :el-get "emacs-openai/chatgpt"
+  :el-get "emacs-openai/codegpt"
+  :config
+  (leaf tblui
+    :ensure t)
+  (if (file-exists-p "~/.emacs.d/.openai.el")
+    (load "~/.emacs.d/.openai.el")))
+
+
 
 

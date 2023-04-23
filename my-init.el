@@ -1389,6 +1389,13 @@ With argument ARG, do this that many times."
   (setq projectile-completion-system completion-system)
   (projectile-mode 1))
 
+;; ----------------------------------------------------------------
+;;  magit
+;; ----------------------------------------------------------------
+(leaf magit
+  :ensure t
+  :bind
+  ("C-x g" . magit-status))
 
 
 

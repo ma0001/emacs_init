@@ -1228,6 +1228,7 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 (leaf rainbow-mode
   :ensure t
+  :blackout t
   :hook css-mode-hook less-mode-hook web-mode-hook html-mode-hook emacs-lisp-mode-hook)
 
 ;; ----------------------------------------------------------------
@@ -1298,6 +1299,7 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 (leaf editorconfig
   :ensure t
+  :blackout t
   :config
   (editorconfig-mode 1))
 
@@ -1374,8 +1376,7 @@ With argument ARG, do this that many times."
   :config
   (leaf tblui
     :ensure t)
-  (if (file-exists-p "~/.emacs.d/.openai.el")
-    (load "~/.emacs.d/.openai.el")))
+  (load "~/.emacs.d/.openai.el" t))
 
 ;; ----------------------------------------------------------------
 ;;  projectile
@@ -1396,6 +1397,24 @@ With argument ARG, do this that many times."
   :ensure t
   :bind
   ("C-x g" . magit-status))
+
+;; ----------------------------------------------------------------
+;;  markdown
+;;    brew install markdown
+;; ----------------------------------------------------------------
+(leaf markdown-mode
+  :ensure t
+  :custom
+  (markdown-command . "markdown"))
+
+(leaf markdown-preview-mode
+  :ensure t
+  :bind
+  (markdown-mode-command-map
+   ("p" . markdown-preview-mode))	; C-c C-c p
+  :config
+;  (add-to-list 'markdown-preview-stylesheets "https://raw.githubusercontent.com/richleland/pygments-css/master/emacs.css")
+  (setq markdown-preview-stylesheets (list "https://github.githubassets.com/assets/light-0946cdc16f15.css")))
 
 
 

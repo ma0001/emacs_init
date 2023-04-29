@@ -1404,14 +1404,15 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 (leaf markdown-mode
   :ensure t
+  :bind
+  (markdown-mode-command-map
+   ("p" . markdown-preview-mode))	; C-c C-c p
   :custom
   (markdown-command . "markdown"))
 
 (leaf markdown-preview-mode
   :ensure t
-  :bind
-  (markdown-mode-command-map
-   ("p" . markdown-preview-mode))	; C-c C-c p
+  :after markdown-mode
   :config
 ;  (add-to-list 'markdown-preview-stylesheets "https://raw.githubusercontent.com/richleland/pygments-css/master/emacs.css")
   (setq markdown-preview-stylesheets (list "https://github.githubassets.com/assets/light-0946cdc16f15.css")))

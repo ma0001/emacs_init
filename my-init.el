@@ -457,7 +457,7 @@
   :if (eq greping-system 'rg)
   :ensure t
   :bind (("M-g M-r" . rg)
-         ("M-g M-f" . search-everything-at-project))
+         ("M-g M-f" . my/rg-search-everything))
   :config
   ;; wgrep は "e" に割り当てすみ
   ;; "i" でignore無視して再検索
@@ -466,13 +466,19 @@
     :query ask
     :format regexp
     :files "everything"
-    :dir ask)
+    :dir project)
   (rg-define-search search-everything-at-current
-    "Search files everything in project directory"
+    "Search files everything in current directory"
     :query ask
     :format regexp
     :files "everything"
-    :dir current)
+    :dir ask)
+  ;;C-uで呼ぶとプロジェクトを検索、指定ないと問いあわせる
+  (defun my/rg-search-everything (arg)
+    (interactive "P")
+    (if arg
+	(call-interactively 'search-everything-at-project)
+      (call-interactively 'search-everything-at-current)))
   )
 
 ;; ----------------------------------------------------------------
@@ -1412,7 +1418,6 @@ With argument ARG, do this that many times."
 
 (leaf markdown-preview-mode
   :ensure t
-  :after markdown-mode
   :config
 ;  (add-to-list 'markdown-preview-stylesheets "https://raw.githubusercontent.com/richleland/pygments-css/master/emacs.css")
   (setq markdown-preview-stylesheets (list "https://github.githubassets.com/assets/light-0946cdc16f15.css")))

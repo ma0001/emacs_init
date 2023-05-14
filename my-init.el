@@ -58,6 +58,11 @@
                (t
                 nil))))))))
 
+(defun my/insert-date ()
+  "Insert date at point."
+  (interactive)
+  (insert (format-time-string "%Y-%m-%d %H:%M:%S")))
+
 ;; ----------------------------------------------------------------
 ;; Determine system
 ;; ----------------------------------------------------------------

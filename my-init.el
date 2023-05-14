@@ -1250,7 +1250,6 @@ With argument ARG, do this that many times."
   )
 ;; ----------------------------------------------------------------
 ;;  Jupyter Notebook(python)
-;;    To install lsp server "pip install 'python-language-server[all]'"
 ;;    Open an .ipynb file, press C-c C-o, or,
 ;;    M-x ein:run launches a jupyter process from emacs
 ;; ----------------------------------------------------------------
@@ -1258,22 +1257,19 @@ With argument ARG, do this that many times."
   :ensure t
   :custom
   (ein:output-area-inlined-images . t)
-  :custom-face
-  (ein:cell-output-area . `((t (:background "wheat"))))
   )
 
 ;; ----------------------------------------------------------------
 ;;  python lsp
 ;;   To install lsp server "brew install pyright"
+;;   To run in a virtual environment Create pyrightconfig.json with "pyenv pyright"
+;;   C-c C-p to run python shell
+;;   C-c C-c to run python-shell-send-buffer
 ;; ----------------------------------------------------------------
 (leaf lsp-pyright
   :ensure t
   :hook (python-mode-hook . lsp))
 
-(leaf poetry
-  :ensure t
-  :hook (python-mode-hook . poetry-tracking-mode))
-  
 ;; ----------------------------------------------------------------
 ;;  arg付きのsplit-windowやother-windowは別frameにする
 ;; ----------------------------------------------------------------

@@ -462,7 +462,9 @@
   :if (eq greping-system 'rg)
   :ensure t
   :bind (("M-g M-r" . rg)
-         ("M-g M-f" . my/rg-search-everything))
+         ("M-g M-f" . my/rg-search-everything)
+	 (rg-mode-map
+	  ("s" . my/rg-save-search)))
   :config
   ;; wgrep は "e" に割り当てすみ
   ;; "i" でignore無視して再検索
@@ -484,6 +486,16 @@
     (if arg
 	(call-interactively 'search-everything-at-project)
       (call-interactively 'search-everything-at-current)))
+  ;; 検索名称を含んだバッファ名にする
+  (defun my/rg-save-search ()
+    "Save the search result in current result buffer.
+NEWNAME will be added to the result buffer name.  New searches will use the
+standard buffer unless the search is done from a saved buffer in
+which case the saved buffer will be reused."
+    (interactive)
+    (when-let ((buffer (rg-get-rename-target)))
+      (with-current-buffer buffer
+	(rename-buffer (format "*%s %s*" (rg--buffer-name) (rg-search-pattern rg-cur-search)) t))))
   )
 
 ;; ----------------------------------------------------------------

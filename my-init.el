@@ -318,6 +318,7 @@
 (global-set-key "\M-l" 'goto-line)
 (global-set-key "\C-xc" 'compile)
 (global-set-key "\M-ga" 'align-regexp)
+(global-set-key "\C-c\C-o" 'browse-url-at-point)
 
 (global-unset-key "\C-t")
 (global-unset-key "\M-t")

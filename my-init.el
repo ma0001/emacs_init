@@ -364,7 +364,10 @@
 ;; 
 (setq recentf-max-saved-items 100)
 
-;(setq default-tab-width 4)
+;;(setq default-tab-width 4)
+(add-hook 'emacs-lisp-mode-hook
+          (lambda () (setq indent-tabs-mode nil)))
+
 
 ;; ----------------------------------------------------------------
 ;; backup

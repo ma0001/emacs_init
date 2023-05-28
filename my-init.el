@@ -845,6 +845,8 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 (leaf flycheck
   :ensure t
+  :hook
+  (prog-mode-hook . flyspell-prog-mode)
   :config
   (global-flycheck-mode t))
 
@@ -1331,6 +1333,7 @@ With argument ARG, do this that many times."
 ;;  editor config
 ;; ----------------------------------------------------------------
 (leaf editorconfig
+  :disabled t
   :ensure t
   :blackout t
   :config

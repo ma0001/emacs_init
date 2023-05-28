@@ -441,6 +441,16 @@
 (global-display-line-numbers-mode t)
 
 ;; ----------------------------------------------------------------
+;;  Enable gnu coding style in specific directories
+;; ----------------------------------------------------------------
+(dir-locals-set-class-variables 'gnu-coding-style-dir-locals
+				(with-temp-buffer
+				  (insert-file-contents-literally "~/.emacs.d/elisp/gnu.dir-locals.el")
+				  (read (buffer-string))))
+(dir-locals-set-directory-class
+ "/opt/homebrew/Cellar/emacs-mac/" 'gnu-coding-style-dir-locals)
+
+;; ----------------------------------------------------------------
 ;; grep , ag, rg
 ;; ----------------------------------------------------------------
 (leaf ag

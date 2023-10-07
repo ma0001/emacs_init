@@ -30,3 +30,9 @@
     (dotimes (i (/ (length hex-str) 2) result)
       (setq result (concat (substring hex-str (* i 2) (+ 2 (* i 2))) result)))
     (string-to-number result 16)))
+
+(defun insert-as-decmalnumber ()
+  "Insert the kill-ring's hex number as a decimal number."
+  (interactive)
+  (insert (number-to-string (hexdump-to-decimal-little (car-safe kill-ring)))))
+

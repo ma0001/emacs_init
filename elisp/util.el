@@ -24,7 +24,7 @@
 
 (defun hexdump-to-decimal-little (hex-str)
   "Converts a little-endian hex dump to decimal."
-  (let ((hex-str (replace-regexp-in-string "[^a-zA-Z0-9]" "" hex-str))
+  (let ((hex-str (replace-regexp-in-string "[^a-fA-F0-9]" "" hex-str))
         (result ""))
     "Reverse the string by splitting it into two characters."
     (dotimes (i (/ (length hex-str) 2) result)

@@ -721,7 +721,8 @@ With argument ARG, do this that many times."
   :ensure t
   :custom
   (company-idle-delay . nil) ; 自動補完をしない
-  :bind (("C-M-i" . company-complete)
+  :bind ((company-mode-map
+          ("C-M-i" . company-complete))
          (company-active-map
           ("C-n" . company-select-next)
           ("C-p" . company-select-previous)

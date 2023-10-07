@@ -26,7 +26,7 @@
   "Converts a little-endian hex dump to decimal."
   (let ((hex-str (replace-regexp-in-string "[^a-fA-F0-9]" "" hex-str))
         (result ""))
-    "Reverse the string by splitting it into two characters."
+    ;; Reverse the string by splitting it into two characters.
     (dotimes (i (/ (length hex-str) 2) result)
       (setq result (concat (substring hex-str (* i 2) (+ 2 (* i 2))) result)))
     (string-to-number result 16)))

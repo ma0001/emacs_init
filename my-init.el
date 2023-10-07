@@ -1364,6 +1364,8 @@ With argument ARG, do this that many times."
   :el-get "zerolfx/copilot.el"
   :hook
   (prog-mode-hook . copilot-mode)
+  ;; commit message でcopilotを使う
+  (git-commit-setup-hook . copilot-mode)
   :config
   (defun my/copilot-tab ()
     (interactive)

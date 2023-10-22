@@ -1140,6 +1140,10 @@ With argument ARG, do this that many times."
     
 ;; ----------------------------------------------------------------
 ;; DAP
+;; installation:
+;;	brew install llvm
+;;	ln -s /opt/homebrew/opt/llvm/bin/lldb-vscode ~/local/bin/lldb-vscode
+;;	M-x dap-cpptools-setup
 ;;  to start debugging M-x dap-debug
 ;; ----------------------------------------------------------------
 (leaf dap-mode
@@ -1150,7 +1154,17 @@ With argument ARG, do this that many times."
   (dap-lldb-debugged-program-function . '(lambda() (read-file-name "Select file to debug.")))
   (dap-auto-configure-features . '(sessions locals controls tooltip))
   :config
-  (require 'dap-lldb))
+  (require 'dap-lldb)
+  (require 'dap-cpptools)
+  (dap-register-debug-template
+   "LLDB::Run Rust"
+   (list :type "lldb-vscode"
+         :request "launch"
+         :name "LLDB::Run"
+         :miDebuggerPath (executable-find "~/.cargo/bin/rust-lldb")
+         :target nil
+         :cwd nil
+         )))
 
 ;; ----------------------------------------------------------------
 ;;  ace jump
@@ -1455,6 +1469,19 @@ With argument ARG, do this that many times."
 ;  (add-to-list 'markdown-preview-stylesheets "https://raw.githubusercontent.com/richleland/pygments-css/master/emacs.css")
   (setq markdown-preview-stylesheets (list "https://github.githubassets.com/assets/light-0946cdc16f15.css")))
 
+;; ----------------------------------------------------------------
+;; 現在のファイルをvscodeで開く
+;; https://blog.shibayu36.org/entry/2019/10/07/193000
+;; https://qiita.com/syo19961113/items/aaceb2598e7a31a28934
+;; ----------------------------------------------------------------
+(defun open-by-vscode ()
+  (interactive)
+  (shell-command
+   (format "code-insiders -r -g %s:%d:%d"
+           (buffer-file-name)
+           (line-number-at-pos)
+           (current-column))))
 
+(define-key global-map (kbd "C-c C-v") 'open-by-vscode)
 
 

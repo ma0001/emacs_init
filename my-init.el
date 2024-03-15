@@ -1061,6 +1061,7 @@ With argument ARG, do this that many times."
    (lsp-ui-sideline-show-hover . t)
    (lsp-ui-sideline-show-diagnostics . t)
    (lsp-ui-sideline-show-code-actions . t)
+   (lsp-ui-sideline-show-diagnostics . nil) ; flycheck-posframe に任せる
    (lsp-ui-sideline-diagnostic-max-lines . 3)
    
    ;; lsp-ui-imenu
@@ -1078,6 +1079,11 @@ With argument ARG, do this that many times."
   :bind ((lsp-ui-mode-map
               ([remap xref-find-definitions] . 'lsp-ui-peek-find-definitions)
               ([remap xref-find-references] . 'lsp-ui-peek-find-references))))
+
+(leaf flycheck-posframe
+  :ensure t
+  :after lsp-mode
+  :hook (flycheck-mode-hook . flycheck-posframe-mode))
 
 (leaf ccls
   :if (eq c-mode-company-use-lsp 'ccls)

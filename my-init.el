@@ -1458,6 +1458,13 @@ With argument ARG, do this that many times."
   ("C-x g" . magit-status))
 
 ;; ----------------------------------------------------------------
+;;  moccur
+;; ----------------------------------------------------------------
+(leaf color-moccur
+  :ensure t
+  :require t)
+
+;; ----------------------------------------------------------------
 ;;  markdown
 ;;    brew install markdown
 ;;	https://qiita.com/tadsan/items/7bb0099479f647d2c106

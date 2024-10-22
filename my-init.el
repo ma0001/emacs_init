@@ -1460,6 +1460,7 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;;  markdown
 ;;    brew install markdown
+;;	https://qiita.com/tadsan/items/7bb0099479f647d2c106
 ;; ----------------------------------------------------------------
 (leaf markdown-mode
   :ensure t
@@ -1467,7 +1468,7 @@ With argument ARG, do this that many times."
   (markdown-mode-command-map
    ("p" . markdown-preview-mode))	; C-c C-c p
   :custom
-  (markdown-command . "markdown"))
+  (markdown-command . '("pandoc" "--from=markdown" "--to=html5")))
 
 (leaf markdown-preview-mode
   :ensure t

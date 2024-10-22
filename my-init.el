@@ -1499,3 +1499,6 @@ With argument ARG, do this that many times."
 (define-key global-map (kbd "C-c C-v") 'open-by-vscode)
 
 
+(leaf nhexl-mode
+  :ensure t)
+

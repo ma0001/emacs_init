@@ -1461,8 +1461,7 @@ With argument ARG, do this that many times."
 ;;  moccur
 ;; ----------------------------------------------------------------
 (leaf color-moccur
-  :ensure t
-  :require t)
+  :ensure t)
 
 ;; ----------------------------------------------------------------
 ;;  markdown

@@ -1490,14 +1490,113 @@ With argument ARG, do this that many times."
 (defun open-by-vscode ()
   (interactive)
   (shell-command
-   (format "code-insiders -r -g %s:%d:%d"
+   (format "code -r -g %s:%d:%d"
            (buffer-file-name)
            (line-number-at-pos)
            (current-column))))
 
 (define-key global-map (kbd "C-c C-v") 'open-by-vscode)
 
+;; ----------------------------------------------------------------
+;; ellma
+;; ----------------------------------------------------------------
+(leaf llm
+  :ensure t)
 
+(leaf ellama
+  :if (executable-find "ollama")
+  :ensure t
+  :require llm-ollama
+  :config
+  (setopt ellama-language "Japanese")
+  (setopt ellama-naming-scheme 'ellama-generate-name-by-llm)
+  (defun update-ellama-providers ()
+    "ollama list を実行して、利用可能なモデルを登録する"
+    (setopt ellama-providers
+            (let* ((result (shell-command-to-string "ollama list"))
+                   (lines (cdr (butlast (split-string result "\n"))))
+                   (models (mapcar 'car (mapcar 'split-string lines))))
+              (mapcar (lambda (arg)
+                        (cons arg (make-llm-ollama :chat-model arg :embedding-model arg)))
+                      models))))
+  (update-ellama-providers)
+
+  ;; ellama-providerの初期値はllamaを含むmodelを優先する
+  (setopt ellama-provider (alist-get "llama" ellama-providers
+                                     (cdr (car ellama-providers)) ; defaultは先頭
+                                     nil
+                                     (lambda (alistcar key) (string-match-p key alistcar))))
+
+  (defun ellama-translation-provider-select ()
+    "Select translation provider."
+    (let ((variants (mapcar #'car ellama-providers)))
+      (setopt ellama-translation-provider (alist-get
+		                           (completing-read "Select translation model: " variants)
+		                           ellama-providers nil nil #'string=))))
+
+  ;; translation providerの初期値はayaを含むmodelを優先する
+  (setopt ellama-translation-provider (alist-get "aya" ellama-providers
+                                                 nil
+                                                 nil
+                                                 (lambda (alistcar key) (string-match-p key alistcar))))
+
+  ;; コード関連に使用するproviderを定義、初期値はcodeを含むmodelを優先する
+  (defvar ellama-coding-provider (alist-get "code" ellama-providers
+                                            nil
+                                            nil
+                                            (lambda (alistcar key) (string-match-p key alistcar))))
+  
+  (defun ellama-coding-provider-select ()
+    "Select coding provider."
+    (let ((variants (mapcar #'car ellama-providers)))
+      (setq ellama-coding-provider (alist-get
+		                    (completing-read "Select coding model: " variants)
+		                    ellama-providers nil nil #'string=))))
+  (defun my/ellama-coding-around-advice (orig-fun &rest args)
+    "ellama=providerをellama-coding-provider に変更して実行する"
+    (let ((ellama-provider ellama-coding-provider))
+      (apply orig-fun args)))
+
+  (advice-add 'ellama-code-add :around #'my/ellama-coding-around-advice)
+  (advice-add 'ellama-code-complete :around #'my/ellama-coding-around-advice)
+  (advice-add 'ellama-code-edit :around #'my/ellama-coding-around-advice)
+  (advice-add 'ellama-code-improve :around #'my/ellama-coding-around-advice)
+  (advice-add 'ellama-code-review :around #'my/ellama-coding-around-advice)
+
+  (define-minor-mode ellama-info-mode
+    "Show ellama information in the mode line."
+    :global t
+    :lighter (:eval (format " ellama[%s]" (llm-ollama-chat-model ellama-provider)))
+    :init-value t
+    :interactive nil)
+
+  (defun ellama-code-infill ()
+    "Complete the code using codellama's infill format."
+    (interactive)
+    (let ((pre (buffer-substring-no-properties (point-min) (point)))
+          (suf (buffer-substring-no-properties (point) (point-max))))
+      ;; ellama-providerが"deepseek"を含むなら
+        (if (string-match-p "deepseek-code" (llm-ollama-chat-model ellama-provider))
+            (ellama-stream (format "<|fim_begin|> %s <|fim_hole|> %s <|fim_end|>" pre suf)
+                           :provider ellama-provider)
+          (ellama-stream (format "<PRE> %s <SUF> %s <MID>" pre suf)
+                         :provider (make-llm-ollama
+                                    :chat-model "codellama:13b-code"
+                                    :embedding-model "codellama:13b-code")))))
+
+  (defun ellama-translate-region (region-beginning region-end)
+    "Translate the region. language is automatically detected. "
+    (interactive "r")
+    (let* ((text (buffer-substring-no-properties region-beginning region-end))
+           (deflang (if (string-match-p "^[a-zA-Z[:space:][:punct:]]+$" text) "Japanese" "English"))
+           (lang (completing-read "Language: " '("English" "Japanese") nil nil deflang)))
+      (ellama-instant (format ellama-translation-template lang text lang)
+                      :provider (or ellama-translation-provider ellama-provider)))))
+
+
+;; ----------------------------------------------------------------
+;; hex mode で検索し易く
+;; ----------------------------------------------------------------
 (leaf nhexl-mode
   :ensure t)
 

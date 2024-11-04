@@ -791,7 +791,7 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;; aspell
 ;; ----------------------------------------------------------------
-;; you may need "lang en_US" in ~/.aspell.conf 
+;; you may need "lang en_US" in ~/.aspell.conf
 (setq-default ispell-program-name "hunspell")
 (setenv "DICTIONARY" "en_US")
 (eval-after-load "ispell"
@@ -1120,6 +1120,7 @@ With argument ARG, do this that many times."
 ;; C-mode stuct enum の中ではコメントはdoxgenの後述コメントを使う
 ;; ----------------------------------------------------------------
 (defun in-defun-p()
+  "Return t if point is in struct or enum."
   (save-excursion
     (beginning-of-defun)
     (let ((word (thing-at-point 'word t)))
@@ -1129,6 +1130,7 @@ With argument ARG, do this that many times."
         nil))))
 
 (defun my-ins-comment(arg)
+  "Insert doxygen style comment in struct or enum."
   (interactive "*P")
   (if (and (not (use-region-p))
           (in-defun-p))
@@ -1195,21 +1197,21 @@ With argument ARG, do this that many times."
   :ensure t
   :config
   (defun my-swiper-all-from-swiper ()
-    " Intended to be bound in `swiper-map'."
+    " 実行中のswiperをswiper-all(swiper' for all open buffers)に変更する"
     (interactive)
     (ivy-exit-with-action
      (lambda (_)
        (swiper-all ivy-text))))
 
   (defun my-counsel-rg-from-swiper-all ()
-    " Intended to be bound in `swiper-map'."
+    " 実行中のswiper-allをcounsel-rgに変更する"
     (interactive)
     (ivy-exit-with-action
      (lambda (_)
        (counsel-rg ivy-text))))
 
   (defun my-swiper-from-counsel-rg ()
-    " Intended to be bound in `swiper-map'."
+    " 実行中のcounsel-rgをswiperに変更する"
     (interactive)
     (ivy-exit-with-action
      (lambda (_)
@@ -1221,6 +1223,7 @@ With argument ARG, do this that many times."
   :bind
   (("C-c s" . swiper-isearch-thing-at-point)
    ("<S-tab>" . counsel-rg)
+   ;; iserach中にC-jを押すことによりswiper, swiper-all, counsel-rgを切り替える
    (isearch-mode-map
     :package isearch
     ("C-j" . swiper-from-isearch))
@@ -1323,18 +1326,21 @@ With argument ARG, do this that many times."
 ;;  arg付きのsplit-windowやother-windowは別frameにする
 ;; ----------------------------------------------------------------
 (defun my/split-window (&optional arg)
+  "Split window vertically.if ARG is given, create new frame."
   (interactive "P")
   (if arg
       (make-frame `((width . ,(frame-width)) (height . ,(frame-height))))
     (split-window-below)))
   
 (defun my/other-window (&optional arg)
+  "Switch to other window.if ARG is given, switch to other frame."
   (interactive "P")
   (if arg
       (other-frame 1)
     (other-window 1)))
 
 (defun my/delete-window (&optional arg)
+  "Delete window.if ARG is given, delete frame."
   (interactive "P")
   (if arg
       (delete-frame)
@@ -1459,6 +1465,7 @@ With argument ARG, do this that many times."
 
 ;; ----------------------------------------------------------------
 ;;  moccur
+;;    swiper-allでも同じことができる
 ;; ----------------------------------------------------------------
 (leaf color-moccur
   :ensure t)
@@ -1488,6 +1495,7 @@ With argument ARG, do this that many times."
 ;; https://qiita.com/syo19961113/items/aaceb2598e7a31a28934
 ;; ----------------------------------------------------------------
 (defun open-by-vscode ()
+  "Open current file by Visual Studio Code."
   (interactive)
   (shell-command
    (format "code -r -g %s:%d:%d"

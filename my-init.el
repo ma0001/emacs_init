@@ -1514,12 +1514,13 @@ With argument ARG, do this that many times."
 (leaf ellama
   :if (executable-find "ollama")
   :ensure t
-  :require llm-ollama
+  :require t llm-ollama                 ; t is needed for ellama-instant, ellama-stream
   :config
   (setopt ellama-language "Japanese")
   (setopt ellama-naming-scheme 'ellama-generate-name-by-llm)
   (defun update-ellama-providers ()
     "ollama list を実行して、利用可能なモデルを登録する"
+    (interactive)
     (setopt ellama-providers
             (let* ((result (shell-command-to-string "ollama list"))
                    (lines (cdr (butlast (split-string result "\n"))))
@@ -1537,9 +1538,10 @@ With argument ARG, do this that many times."
 
   (defun ellama-translation-provider-select ()
     "Select translation provider."
+    (interactive)
     (let ((variants (mapcar #'car ellama-providers)))
       (setopt ellama-translation-provider (alist-get
-		                           (completing-read "Select translation model: " variants)
+		                           (completing-read "Select translation model: " variants nil t (llm-ollama-chat-model ellama-translation-provider))
 		                           ellama-providers nil nil #'string=))))
 
   ;; translation providerの初期値はayaを含むmodelを優先する
@@ -1556,13 +1558,16 @@ With argument ARG, do this that many times."
   
   (defun ellama-coding-provider-select ()
     "Select coding provider."
+    (interactive)
     (let ((variants (mapcar #'car ellama-providers)))
       (setq ellama-coding-provider (alist-get
-		                    (completing-read "Select coding model: " variants)
+		                    (completing-read "Select coding model: " variants nil t (llm-ollama-chat-model ellama-coding-provider))
 		                    ellama-providers nil nil #'string=))))
+
+    ;; コードに関する呼び出しはproviderを変更する
   (defun my/ellama-coding-around-advice (orig-fun &rest args)
     "ellama=providerをellama-coding-provider に変更して実行する"
-    (let ((ellama-provider ellama-coding-provider))
+    (let ((ellama-provider (or ellama-coding-provider ellama-provider)))
       (apply orig-fun args)))
 
   (advice-add 'ellama-code-add :around #'my/ellama-coding-around-advice)

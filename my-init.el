@@ -1524,25 +1524,41 @@ With argument ARG, do this that many times."
   :ensure t
   :require t llm-ollama                 ; t is needed for ellama-instant, ellama-stream
   :config
-  (setopt ellama-language "Japanese")
-  (setopt ellama-naming-scheme 'ellama-generate-name-by-llm)
-  (defun update-ellama-providers ()
-    "ollama list を実行して、利用可能なモデルを登録する"
+  ;; ollama serveをバックグラウンドで起動する
+  (start-process "ollama-server" "*ollama-server-buffer*" "ollama" "serve")
+  ;; ollama serverが起動したらセットアップ実施 暫定的に２秒後に実行
+  (run-at-time 2 0 'setup-ellama-after-server-start)
+
+  (defvar ellama-coding-provider)
+  
+  (defun setup-ellama-after-server-start ()
+    "ellama 各種セットアップ ollama server が起動した後に呼び出す"
     (interactive)
+    (setopt ellama-language "Japanese")
+    (setopt ellama-naming-scheme 'ellama-generate-name-by-llm)
+    ;; ollama list を実行して、利用可能なモデルを登録する
     (setopt ellama-providers
             (let* ((result (shell-command-to-string "ollama list"))
                    (lines (cdr (butlast (split-string result "\n"))))
                    (models (mapcar 'car (mapcar 'split-string lines))))
               (mapcar (lambda (arg)
                         (cons arg (make-llm-ollama :chat-model arg :embedding-model arg)))
-                      models))))
-  (update-ellama-providers)
-
-  ;; ellama-providerの初期値はllamaを含むmodelを優先する
-  (setopt ellama-provider (alist-get "llama" ellama-providers
-                                     (cdr (car ellama-providers)) ; defaultは先頭
-                                     nil
-                                     (lambda (alistcar key) (string-match-p key alistcar))))
+                      models)))
+    ;; ellama-providerの初期値はllamaを含むmodelを優先する
+    (setopt ellama-provider (alist-get "llama" ellama-providers
+                                       (cdr (car ellama-providers)) ; defaultは先頭
+                                       nil
+                                       (lambda (alistcar key) (string-match-p key alistcar))))
+    ;; translation providerの初期値はayaを含むmodelを優先する
+    (setopt ellama-translation-provider (alist-get "aya" ellama-providers
+                                                   nil
+                                                   nil
+                                                   (lambda (alistcar key) (string-match-p key alistcar))))
+    ;; コード関連に使用するproviderを定義、初期値はcodeを含むmodelを優先する
+    (setq ellama-coding-provider (alist-get "code" ellama-providers
+                                            nil
+                                            nil
+                                            (lambda (alistcar key) (string-match-p key alistcar)))))
 
   (defun ellama-translation-provider-select ()
     "Select translation provider."
@@ -1552,18 +1568,6 @@ With argument ARG, do this that many times."
 		                           (completing-read "Select translation model: " variants nil t (llm-ollama-chat-model ellama-translation-provider))
 		                           ellama-providers nil nil #'string=))))
 
-  ;; translation providerの初期値はayaを含むmodelを優先する
-  (setopt ellama-translation-provider (alist-get "aya" ellama-providers
-                                                 nil
-                                                 nil
-                                                 (lambda (alistcar key) (string-match-p key alistcar))))
-
-  ;; コード関連に使用するproviderを定義、初期値はcodeを含むmodelを優先する
-  (defvar ellama-coding-provider (alist-get "code" ellama-providers
-                                            nil
-                                            nil
-                                            (lambda (alistcar key) (string-match-p key alistcar))))
-  
   (defun ellama-coding-provider-select ()
     "Select coding provider."
     (interactive)
@@ -1572,7 +1576,7 @@ With argument ARG, do this that many times."
 		                    (completing-read "Select coding model: " variants nil t (llm-ollama-chat-model ellama-coding-provider))
 		                    ellama-providers nil nil #'string=))))
 
-    ;; コードに関する呼び出しはproviderを変更する
+  ;; コードに関する呼び出しはproviderを変更する
   (defun my/ellama-coding-around-advice (orig-fun &rest args)
     "ellama=providerをellama-coding-provider に変更して実行する"
     (let ((ellama-provider (or ellama-coding-provider ellama-provider)))
@@ -1594,16 +1598,16 @@ With argument ARG, do this that many times."
   (defun ellama-code-infill ()
     "Complete the code using codellama's infill format."
     (interactive)
-    (let ((pre (buffer-substring-no-properties (point-min) (point)))
-          (suf (buffer-substring-no-properties (point) (point-max))))
-      ;; ellama-providerが"deepseek"を含むなら
-        (if (string-match-p "deepseek-code" (llm-ollama-chat-model ellama-provider))
-            (ellama-stream (format "<|fim_begin|> %s <|fim_hole|> %s <|fim_end|>" pre suf)
-                           :provider ellama-provider)
-          (ellama-stream (format "<PRE> %s <SUF> %s <MID>" pre suf)
-                         :provider (make-llm-ollama
-                                    :chat-model "codellama:13b-code"
-                                    :embedding-model "codellama:13b-code")))))
+    (let* ((pre (buffer-substring-no-properties (point-min) (point)))
+           (suf (buffer-substring-no-properties (point) (point-max)))
+           (provider (llm-ollama-chat-model ellama-coding-provider))
+           (prompt (cond ((string-match-p "deepseek-code" provider)
+                          (format "<|fim_begin|> %s <|fim_hole|> %s <|fim_end|>" pre suf))
+                         ((string-match-p "codellama" provider)
+                          (format "<PRE> %s <SUF> %s <MID>" pre suf))
+                         ((string-match-p "qwen2.5" provider)
+                          (format "<|fim_prefix|> %s <|fim_suffix|> %s <|fim_middle|>" pre suf)))))
+      (ellama-stream prompt :provider ellama-provider)))
 
   (defun ellama-translate-region (region-beginning region-end)
     "Translate the region. language is automatically detected. "

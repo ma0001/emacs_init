@@ -1371,9 +1371,9 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 (global-set-key "\C-cc" 'org-capture)
 (setq org-capture-templates
-      '(("t" "TODO" entry (file+headline "~/work/Org/TODO.org" "Inbox")
-         "*** TODO %?\nEntered on %U\n %i\n %a")
-	("n" "Note" entry (file+headline "~/work/Org/notes.org" "Notes")
+      '(("t" "TODO" entry (file+headline "~/org/TODO.org" "Inbox")
+         "*** TODO %?\n    created : %T\n    deadline : %t\n")
+	("m" "Memo" entry (file+headline "~/org/memo.org" "Memo")
          "* %?\nEntered on %U\n %i\n %a")
         ))
 (global-set-key "\C-ca" 'org-agenda)
@@ -1382,6 +1382,7 @@ With argument ARG, do this that many times."
         ("o" . "Original agenda view") ; description for "o" prefix
         ("ot" todo "TODO")
         ))
+(setq org-startup-truncated nil)
 
 ;; ----------------------------------------------------------------
 ;;  Copilot

@@ -347,6 +347,9 @@
 ;; インデントは先頭のみ
 (setq c-tab-always-indent nil)
 
+;; delete all whitespace when back space
+(setq backward-delete-char-untabify-method 'hungry)
+
 ;; ---------------- mode line
 ;; 行番号の表示（有効：t、無効：nil）
 (line-number-mode t)

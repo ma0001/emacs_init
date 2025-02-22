@@ -1412,7 +1412,15 @@ With argument ARG, do this that many times."
 	 ("C-c n" . copilot-next-completion)
 	 ("C-c p" . copilot-previous-completion)))
 
-
+;; to start copilot chat M-x copilot-chat-display
+;; Type your question in *copilot-chat-prompt* buffer, then press C-c C-c or C-c RET.
+(leaf copilot-chat
+  :ensure t
+  :config
+  (setopt copilot-chat-frontend 'org)
+  ;;magit commits
+  (add-hook 'git-commit-setup-hook 'copilot-chat-mode))
+  
 ;; ----------------------------------------------------------------
 ;;  plantUML
 ;; 	https://plantuml.com

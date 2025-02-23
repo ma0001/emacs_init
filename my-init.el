@@ -1440,7 +1440,25 @@ With argument ARG, do this that many times."
     (setq plantuml-default-exec-mode 'jar))
    (t
     (setq plantuml-default-exec-mode 'server)))
-  (setq plantuml-output-type "png"))
+  (setq plantuml-output-type "pvg"))
+
+;; ----------------------------------------------------------------
+;;  gnuplot
+;; ----------------------------------------------------------------
+(leaf gnuplot-mode
+  :ensure t
+  :mode  (("\\.\\(gp\\|gnuplot\\)$" . gnuplot-mode)))
+
+;; ----------------------------------------------------------------
+;;  D2
+;; ----------------------------------------------------------------
+(leaf d2-mode
+  :ensure t
+  :config
+  (setq d2-output-format ".svg")
+  (setq d2-tmp-dir "C:\Temp")
+  :mode  (("\\.d2$" . d2-mode)))
+
 
 ;; ----------------------------------------------------------------
 ;;  openAI
@@ -1622,6 +1640,15 @@ With argument ARG, do this that many times."
       (ellama-instant (format ellama-translation-template lang text lang)
                       :provider (or ellama-translation-provider ellama-provider)))))
 
+;; ----------------------------------------------------------------
+;;  json
+;; ----------------------------------------------------------------
+(leaf json-mode
+  :ensure t
+  :config
+  (add-hook 'json-mode-hook
+            (lambda()
+              (flycheck-mode 1))))
 
 ;; ----------------------------------------------------------------
 ;; hex mode で検索し易く

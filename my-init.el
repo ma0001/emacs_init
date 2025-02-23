@@ -61,7 +61,7 @@
 (defun my/insert-date ()
   "Insert date at point."
   (interactive)
-  (insert (format-time-string "%Y-%m-%d %H:%M:%S")))
+  (insert (format-time-string "%Y-%m-%d %H:%M:%S %Z")))
 
 ;; ----------------------------------------------------------------
 ;; Determine system
@@ -255,6 +255,7 @@
       (w32-ime-initialize)
       ;; IME変更
       (global-set-key (kbd "C-\\") 'toggle-input-method)
+      (global-set-key (kbd "<M-SPC>") 'toggle-input-method)
       ;;    (global-set-key (kbd "<M-spc>") 'toggle-input-method)
       ;; 漢字/変換キー入力時のエラーメッセージ抑止
       (global-set-key (kbd "<M-kanji>") 'ignore)
@@ -371,6 +372,8 @@
 (add-hook 'emacs-lisp-mode-hook
           (lambda () (setq indent-tabs-mode nil)))
 
+;; set minimum severity level for displaying the warning buffer
+(setq warning-minimum-level :error)
 
 ;; ----------------------------------------------------------------
 ;; backup
@@ -439,6 +442,7 @@
 
 (leaf all-the-icons
   :ensure t
+  :require t
   )
 ;; ----------------------------------------------------------------
 ;; line number

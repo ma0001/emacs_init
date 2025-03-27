@@ -390,18 +390,28 @@
 ;; ----------------------------------------------------------------
 ;; theme
 ;; ----------------------------------------------------------------
+(leaf modus
+  :if (eq theme-selection 'modus)
+  :custom
+  ((modus-themes-italic-constructs . t)
+   (modus-themes-bold-constructs . nil)
+   (modus-themes-region . '(bg-only no-extend)))
+  :config
+  (require-theme 'modus-themes)
+  (load-theme 'modus-vivendi))
+
+(leaf doom-themes
+  :if (eq theme-selection 'doom-dracura)
+  :ensure t
+  :config
+  ;;;(load-theme 'doom-nord-light t)
+  (load-theme 'doom-dracura t))
+
+
 (leaf doom-themes
   :if (eq theme-selection 'doom)
   :ensure t
   :custom-face
-  ((yas-field-highlight-face . '((t (:inherit match :inverse-video t))))
-   ;; 選択バッファをわかりやすく表示
-   (mode-line . '((t (:foreground "black" :background "orange"))))
-   (mode-line-buffer-id . '((t (:foreground nil :background nil))))
-   (mode-line-inactive . '((t (:foreground "gray50" :background "gray85"))))
-   (header-line . '((t (:foreground "#51afef" :background "#505662"))))
-   ;; elispでのcompletion-at-point での選択表示が分かりにくいので変更
-   (ivy-current-match . '((t :background "#1a4b77" :foreground "white"  t :extend t))))
 
   :custom
   ;; Global settings (defaults)
@@ -419,6 +429,19 @@
   (doom-themes-treemacs-config)
   ;; Corrects (and improves) org-mode's native fontification.
   (doom-themes-org-config)
+  ;; Must be used *after* the theme is loaded
+  (custom-set-faces
+   `(yas-field-highlight-face ((t (:inherit match :inverse-video t))))
+   ;; 選択バッファをわかりやすく表示
+   `(mode-line ((t (:foreground "black" :background "orange"))))
+   `(mode-line-buffer-id ((t (:foreground nil :background nil))))
+   `(mode-line-inactive ((t (:foreground "gray50" :background "gray85"))))
+   `(header-line ((t (:foreground "#51afef" :background "#505662"))))
+   ;; elispでのcompletion-at-point での選択表示が分かりにくいので変更
+   `(ivy-current-match ((t :background "#1a4b77" :foreground "white"  t :extend t)))
+   ;; markdown のヘッダ色が気に入らない
+   `(markdown-header-face ((t :inherit 'bold :foreground ,(doom-color 'orange)))))
+
   ;; ----------------------------------------------------------------
   ;; 選択Windowsを分かりやすくする
   ;; ----------------------------------------------------------------
@@ -1321,6 +1344,7 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;;  python lsp
 ;;   To install lsp server "brew install pyright"
+;;   (nodebrewで管理していない)nodeがインストールされてしまうので、brew uninstall --ignore-dependencies node して削除
 ;;   To run in a virtual environment Create pyrightconfig.json with "pyenv pyright"
 ;;   C-c C-p to run python shell
 ;;   C-c C-c to run python-shell-send-buffer
@@ -1648,6 +1672,7 @@ With argument ARG, do this that many times."
 ;;  json
 ;; ----------------------------------------------------------------
 (leaf json-mode
+  :if (version< emacs-version "30.0")
   :ensure t
   :config
   (add-hook 'json-mode-hook

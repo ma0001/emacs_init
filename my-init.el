@@ -1391,11 +1391,12 @@ With argument ARG, do this that many times."
 ;;  editor config
 ;; ----------------------------------------------------------------
 (leaf editorconfig
-  :disabled t
+;;  :disabled t		;; need for copilot mode
   :ensure t
   :blackout t
   :config
-  (editorconfig-mode 1))
+					;  (editorconfig-mode 1))
+  )
 
 ;; ----------------------------------------------------------------
 ;;  ORG
@@ -1418,6 +1419,9 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 ;;  Copilot
 ;; 	https://github.com/zerolfx/copilot.el
+;; 	Install the copilot server by M-x copilot-install-server.
+;; 	Login to Copilot by M-x copilot-login. You can also check the status by M-x copilot-diagnose
+;;		(NotAuthorized means you don't have a valid subscription).
 ;; ----------------------------------------------------------------
 (leaf copilot
   :el-get "zerolfx/copilot.el"

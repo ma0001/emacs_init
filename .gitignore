@@ -9,4 +9,6 @@
 !/snippets/*/*
 !/windows/
 !/windows/*
+!/mac/
+!/mac/*
 .DS_Store

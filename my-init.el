@@ -154,7 +154,8 @@
   (customize-set-variable
    'package-archives '(("org" . "https://orgmode.org/elpa/")
                        ("melpa" . "https://melpa.org/packages/")
-                       ("gnu" . "https://elpa.gnu.org/packages/")))
+                       ("gnu" . "https://elpa.gnu.org/packages/")
+                       ("jcs-elpa" . "https://jcs-emacs.github.io/jcs-elpa/packages/")))
   (package-initialize)
   (unless (package-installed-p 'leaf)
     (package-refresh-contents)
@@ -1496,14 +1497,8 @@ With argument ARG, do this that many times."
 ;;  openAI
 ;; 	https://github.com/emacs-openai
 ;; ----------------------------------------------------------------
-(leaf openai
-  :el-get "emacs-openai/openai"
-  :el-get "emacs-openai/chatgpt"
-  :el-get "emacs-openai/codegpt"
-  :config
-  (leaf tblui
-    :ensure t)
-  (load "~/.emacs.d/.openai.el" t))
+(leaf chatgpt
+  :ensure t)
 
 ;; ----------------------------------------------------------------
 ;;  projectile

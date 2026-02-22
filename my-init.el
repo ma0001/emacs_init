@@ -1424,7 +1424,7 @@ With argument ARG, do this that many times."
 ;;		(NotAuthorized means you don't have a valid subscription).
 ;; ----------------------------------------------------------------
 (leaf copilot
-  :el-get "zerolfx/copilot.el"
+  :ensure t
   :hook
   (prog-mode-hook . copilot-mode)
   ;; commit message でcopilotを使う

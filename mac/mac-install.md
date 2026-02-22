@@ -2,10 +2,18 @@
 ¥キーで入力する文字をバックスラッシュ (\) に変更する
 
 # emacs
+
+emacs-macがtahoeで動作しなくなったのでmac-appを使う
+```
+brea install mac-app
+```
+
+以下未使用
 ```
 brew tap railwaycat/emacsmacport
 brew install emacs-mac
 ```
+
 ## font インストール
 https://github.com/yuru7/HackGen/releases
 からHackGen-Bold HackGen-Regular をインストール

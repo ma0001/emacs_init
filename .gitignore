@@ -12,3 +12,5 @@
 !/mac/
 !/mac/*
 .DS_Store
+!early-init.el
+

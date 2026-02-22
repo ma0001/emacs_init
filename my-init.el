@@ -86,6 +86,7 @@
 
 (defvar theme-selection 'doom)
 
+;; debug-mac-imeはackageの読み込みを制御するためearly-init.elで定義している
 
 ;;
 (set-language-environment 'Japanese)
@@ -209,37 +210,21 @@
 (leaf *input-method
   :config
   ;; ---------------- mac
-  (leaf *mac-ime
-    :if system-darwin-p
+  (leaf mac-ime
+    :if (and (not debug-mac-ime) system-darwin-p)
+    :vc (:url "https://github.com/ma0001/mac-ime.git")
     :config
-    ;; C-\ でOSの入力モードを切り替える
-    (defun my/toggle-input-method ()
-      (interactive)
-      (message "my/toggle-input-method %s" (mac-input-source))
-      (if (string-match "\\.Roman$" (mac-input-source))
-	  (progn
-            (mac-select-input-source "com.apple.inputmethod.Kotoeri.RomajiTyping.Japanese"))
-	(progn
-	  (mac-select-input-source "com.apple.inputmethod.Kotoeri.RomajiTyping.Roman"))))
-
-    (global-set-key "\C-\\" 'my/toggle-input-method)
-
-    ;; モードラインにOSのIME状態を表示
-    (defvar mode-line-ime-info nil)
-
-    (setcdr (nthcdr 1 mode-line-format)
-	    (cons 'mode-line-ime-info (nthcdr 2 mode-line-format)))
-
-    (defun my/update-ime-info ()
-      (if (string-match "\\.Roman$" (mac-input-source))
-	  (setq mode-line-ime-info "[Aa]")
-	(setq mode-line-ime-info "[こ]"))
-      (force-mode-line-update))
-    
-    (add-hook 'mac-selected-keyboard-input-source-change-hook 'my/update-ime-info)
-
-    (mac-auto-ascii-mode 1))
-
+    (setq default-input-method "mac-ime")
+    (mac-ime-enable)
+    (setq mac-ime-debug-level 0))
+  (leaf mac-ime-debug
+    :if (and debug-mac-ime system-darwin-p)
+    :config
+    (add-to-list 'load-path "/Users/masami/work/projects/mac-ime")
+    (require 'mac-ime)
+    (setq default-input-method "mac-ime")
+    (mac-ime-enable)
+    (setq mac-ime-debug-level 0))
   ;; ---------------- win
   (leaf tr-ime
     :if system-windows-p
@@ -275,7 +260,7 @@
       ;; バッファ切り替え時の状態引継ぎ設定（有効：t、無効：nil）
       (setq w32-ime-buffer-switch-p t)
       ))
-  )
+)
 
 
 ;; ----------------------------------------------------------------

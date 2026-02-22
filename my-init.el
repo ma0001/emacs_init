@@ -1583,8 +1583,6 @@ With argument ARG, do this that many times."
   ;; ollama serverが起動したらセットアップ実施 暫定的に２秒後に実行
   (run-at-time 2 0 'setup-ellama-after-server-start)
 
-  (defvar ellama-coding-provider)
-  
   (defun setup-ellama-after-server-start ()
     "ellama 各種セットアップ ollama server が起動した後に呼び出す"
     (interactive)
@@ -1609,10 +1607,10 @@ With argument ARG, do this that many times."
                                                    nil
                                                    (lambda (alistcar key) (string-match-p key alistcar))))
     ;; コード関連に使用するproviderを定義、初期値はcodeを含むmodelを優先する
-    (setq ellama-coding-provider (alist-get "code" ellama-providers
-                                            nil
-                                            nil
-                                            (lambda (alistcar key) (string-match-p key alistcar)))))
+    (setopt ellama-coding-provider (alist-get "code" ellama-providers
+                                              nil
+                                              nil
+                                              (lambda (alistcar key) (string-match-p key alistcar)))))
 
   (defun ellama-translation-provider-select ()
     "Select translation provider."
@@ -1622,25 +1620,6 @@ With argument ARG, do this that many times."
 		                           (completing-read "Select translation model: " variants nil t (llm-ollama-chat-model ellama-translation-provider))
 		                           ellama-providers nil nil #'string=))))
 
-  (defun ellama-coding-provider-select ()
-    "Select coding provider."
-    (interactive)
-    (let ((variants (mapcar #'car ellama-providers)))
-      (setq ellama-coding-provider (alist-get
-		                    (completing-read "Select coding model: " variants nil t (llm-ollama-chat-model ellama-coding-provider))
-		                    ellama-providers nil nil #'string=))))
-
-  ;; コードに関する呼び出しはproviderを変更する
-  (defun my/ellama-coding-around-advice (orig-fun &rest args)
-    "ellama=providerをellama-coding-provider に変更して実行する"
-    (let ((ellama-provider (or ellama-coding-provider ellama-provider)))
-      (apply orig-fun args)))
-
-  (advice-add 'ellama-code-add :around #'my/ellama-coding-around-advice)
-  (advice-add 'ellama-code-complete :around #'my/ellama-coding-around-advice)
-  (advice-add 'ellama-code-edit :around #'my/ellama-coding-around-advice)
-  (advice-add 'ellama-code-improve :around #'my/ellama-coding-around-advice)
-  (advice-add 'ellama-code-review :around #'my/ellama-coding-around-advice)
 
   (define-minor-mode ellama-info-mode
     "Show ellama information in the mode line."

@@ -156,6 +156,7 @@
    'package-archives '(("org" . "https://orgmode.org/elpa/")
                        ("melpa" . "https://melpa.org/packages/")
                        ("gnu" . "https://elpa.gnu.org/packages/")
+;                       ("nongnu" . "https://elpa.nongnu.org/nongnu/")
                        ("jcs-elpa" . "https://jcs-emacs.github.io/jcs-elpa/packages/")))
   (package-initialize)
   (unless (package-installed-p 'leaf)
@@ -212,7 +213,7 @@
   ;; ---------------- mac
   (leaf mac-ime
     :if (and (not debug-mac-ime) system-darwin-p)
-    :vc (:url "https://github.com/ma0001/mac-ime.git")
+    :vc (:url "https://github.com/ma0001/mac-ime.git" :branch "develop")
     :config
     (setq default-input-method "mac-ime")
     (mac-ime-enable)
@@ -1484,13 +1485,6 @@ With argument ARG, do this that many times."
 
 
 ;; ----------------------------------------------------------------
-;;  openAI
-;; 	https://github.com/emacs-openai
-;; ----------------------------------------------------------------
-(leaf chatgpt
-  :ensure t)
-
-;; ----------------------------------------------------------------
 ;;  projectile
 ;; ----------------------------------------------------------------
 (leaf projectile
@@ -1652,4 +1646,18 @@ With argument ARG, do this that many times."
 ;; ----------------------------------------------------------------
 (leaf nhexl-mode
   :ensure t)
+
+;; ----------------------------------------------------------------
+;; vterm
+;; ----------------------------------------------------------------
+(leaf vterm
+  :ensure t
+  :config
+  ;; vtermバッファ自体の背景色と文字色を指定
+  (add-hook 'vterm-mode-hook
+            (lambda ()
+              (set-face-background 'default "#000000")
+              (set-face-foreground 'default "#ffffff"))))
+  
+
 

@@ -1658,6 +1658,11 @@ With argument ARG, do this that many times."
             (lambda ()
               (set-face-background 'default "#000000")
               (set-face-foreground 'default "#ffffff"))))
-  
+
+;; ----------------------------------------------------------------
+;; gemini-mode
+;; ----------------------------------------------------------------
+(leaf gemini-mode
+  :require t)
 
 

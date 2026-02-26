@@ -12,6 +12,7 @@
 ;;   M-x gemini     - gemini-cliを起動
 ;;   C-c C-c        - 入力バッファの内容をgemini-cliに送信
 ;;   TAB            - 入力バッファの内容でgemini-cliのTAB補完を実行
+;;   Shift-TAB      - gemini-cliのauto-accepting editsをトグル
 
 ;;; Code:
 
@@ -187,11 +188,22 @@ vtermウィンドウが表示されていなければ自動的に表示する。
         (erase-buffer)
         (insert completed)))))
 
+(defun gemini-toggle-auto-accept ()
+  "gemini-cliにShift-TABを送信してauto-accepting editsをトグルする。"
+  (interactive)
+  (let ((vbuf (gemini--get-vterm-buffer)))
+    (unless vbuf
+      (user-error "gemini vtermバッファが見つかりません"))
+    (gemini--with-vterm-window
+     (lambda ()
+       (vterm-send-key "<backtab>")))))
+
 (defvar gemini-input-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'gemini-send-input)
     (define-key map (kbd "<tab>") #'gemini-tab-complete)
     (define-key map (kbd "TAB") #'gemini-tab-complete)
+    (define-key map (kbd "S-<tab>") #'gemini-toggle-auto-accept)
     map)
   "gemini-input-mode用キーマップ。")
 

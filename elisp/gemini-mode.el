@@ -1,4 +1,4 @@
-;;; gemini-mode.el --- Run gemini-cli in vterm with separate input buffer -*- lexical-binding: t; -*-
+;;; gemini-mode.el --- Run gemini-cli in vterm with separate input buffer -*- lexical-binding: t; no-byte-compile: t; -*-
 
 ;; Author: masami
 ;; Keywords: tools, ai
@@ -109,14 +109,22 @@ point-maxから後方検索でプロンプトパターンに一致する行を�
 
 (defun gemini--with-vterm-window (body-fn)
   "vtermウィンドウを選択してBODY-FNを実行する。
-copy-modeの解除とhookの抑制を行い、完了後に元のウィンドウに戻る。"
+copy-modeの解除とhookの抑制を行い、完了後に元のウィンドウに戻る。
+vtermウィンドウが表示されていなければ自動的に表示する。"
   (let ((vbuf (gemini--get-vterm-buffer))
         (orig-window (selected-window)))
     (unless vbuf
       (user-error "gemini vtermバッファが見つかりません。M-x gemini で起動してください"))
     (let ((vwin (get-buffer-window vbuf)))
+      ;; ウィンドウがなければ初期レイアウトと同じ配置で表示
       (unless vwin
-        (user-error "gemini vtermウィンドウが見つかりません"))
+        (delete-other-windows)
+        (setq vwin (selected-window))
+        (set-window-buffer vwin vbuf)
+        (let ((iwin (split-window-below -10)))
+          (set-window-buffer iwin (gemini--get-input-buffer))
+          ;; orig-windowは消えたので入力バッファのウィンドウを戻り先にする
+          (setq orig-window iwin)))
       (let ((gemini--inhibit-hook t))
         (select-window vwin)
         (when (bound-and-true-p vterm-copy-mode)

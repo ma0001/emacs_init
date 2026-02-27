@@ -1,252 +1,205 @@
-;;; gemini-mode.el --- Run gemini-cli in vterm with separate input buffer -*- lexical-binding: t; no-byte-compile: t; -*-
+;;; gemini-mode.el --- Emacs extension to run gemini-cli -*- lexical-binding: t; -*-
 
-;; Author: masami
-;; Keywords: tools, ai
+;; Require vterm
+(require 'vterm)
 
-;;; Commentary:
-
-;; Emacs上でgemini-cliを操作する拡張機能。
-;; vtermでgemini-cliを起動し出力を表示、別バッファでユーザー入力を行う。
-;;
-;; 使い方:
-;;   M-x gemini     - gemini-cliを起動
-;;   C-c C-c        - 入力バッファの内容をgemini-cliに送信
-;;   TAB            - 入力バッファの内容でgemini-cliのTAB補完を実行
-;;   Shift-TAB      - gemini-cliのauto-accepting editsをトグル
-
-;;; Code:
-
-(declare-function vterm "vterm")
-(declare-function vterm-send-string "vterm")
-(declare-function vterm-send-key "vterm")
-(declare-function vterm-send-return "vterm")
-(declare-function vterm-copy-mode "vterm")
-(defvar vterm-shell)
-(defvar vterm-copy-mode)
-
-(defgroup gemini nil
-  "Run gemini-cli in vterm with separate input buffer."
-  :group 'tools
-  :prefix "gemini-")
-
-(defcustom gemini-cli-command "gemini"
-  "gemini-cliの実行コマンド名。"
-  :type 'string
-  :group 'gemini)
-
-(defcustom gemini-prompt-regexp "^ *[>❯] *"
-  "gemini-cliのプロンプトを認識するための正規表現。"
-  :type 'regexp
-  :group 'gemini)
-
-(defcustom gemini-vterm-buffer-name "*gemini*"
-  "gemini-cli用vtermバッファ名。"
-  :type 'string
-  :group 'gemini)
-
-(defcustom gemini-input-buffer-name "*gemini-input*"
-  "gemini入力バッファ名。"
-  :type 'string
-  :group 'gemini)
-
-(defcustom gemini-completion-wait 0.5
-  "TAB補完結果を待つ秒数。"
-  :type 'number
-  :group 'gemini)
-
-(defvar gemini--vterm-buffer nil
-  "gemini-cli用vtermバッファ。")
-
-(defvar gemini--input-buffer nil
-  "gemini入力バッファ。")
-
-(defvar gemini--inhibit-hook nil
-  "non-nilの間、window-selection-hookを抑制する。")
-
-(defun gemini--get-vterm-buffer ()
-  "vtermバッファを取得。存在しなければnil。"
-  (and gemini--vterm-buffer
-       (buffer-live-p gemini--vterm-buffer)
-       gemini--vterm-buffer))
-
-(defun gemini--get-input-buffer ()
-  "入力バッファを取得。存在しなければnil。"
-  (and gemini--input-buffer
-       (buffer-live-p gemini--input-buffer)
-       gemini--input-buffer))
-
-(defun gemini--window-selection-hook (_frame)
-  "ウィンドウ選択変更時にvterm-copy-modeを切り替える。
-*gemini*バッファに入ったらcopy-modeを有効化、出たら無効化する。"
-  (unless gemini--inhibit-hook
-    (let ((vbuf (gemini--get-vterm-buffer)))
-      (when vbuf
-        (if (eq (window-buffer (selected-window)) vbuf)
-            ;; vtermバッファに入った → copy-mode有効化（スクロール可能に）
-            (with-current-buffer vbuf
-              (unless (bound-and-true-p vterm-copy-mode)
-                (vterm-copy-mode 1)))
-          ;; vtermバッファから出た → copy-mode無効化（表示更新を再開）
-          (with-current-buffer vbuf
-            (when (bound-and-true-p vterm-copy-mode)
-              (vterm-copy-mode -1))))))))
-
-(defun gemini--vterm-last-line ()
-  "vtermバッファからプロンプト行のテキストを取得する。
-point-maxから後方検索でプロンプトパターンに一致する行を探す。"
-  (with-current-buffer (gemini--get-vterm-buffer)
-    (save-excursion
-      (goto-char (point-max))
-      (if (re-search-backward gemini-prompt-regexp nil t)
-          (buffer-substring-no-properties
-           (line-beginning-position) (line-end-position))
-        ""))))
-
-(defun gemini--strip-prompt (line)
-  "LINE からプロンプト部分を除去して返す。"
-  (if (string-match gemini-prompt-regexp line)
-      (substring line (match-end 0))
-    line))
-
-(defun gemini--with-vterm-window (body-fn)
-  "vtermウィンドウを選択してBODY-FNを実行する。
-copy-modeの解除とhookの抑制を行い、完了後に元のウィンドウに戻る。
-vtermウィンドウが表示されていなければ自動的に表示する。"
-  (let ((vbuf (gemini--get-vterm-buffer))
-        (orig-window (selected-window)))
-    (unless vbuf
-      (user-error "gemini vtermバッファが見つかりません。M-x gemini で起動してください"))
-    (let ((vwin (get-buffer-window vbuf)))
-      ;; ウィンドウがなければ初期レイアウトと同じ配置で表示
-      (unless vwin
-        (delete-other-windows)
-        (setq vwin (selected-window))
-        (set-window-buffer vwin vbuf)
-        (let ((iwin (split-window-below -10)))
-          (set-window-buffer iwin (gemini--get-input-buffer))
-          ;; orig-windowは消えたので入力バッファのウィンドウを戻り先にする
-          (setq orig-window iwin)))
-      (let ((gemini--inhibit-hook t))
-        (select-window vwin)
-        (when (bound-and-true-p vterm-copy-mode)
-          (vterm-copy-mode -1))
-        (unwind-protect
-            (funcall body-fn)
-          (select-window orig-window))))))
-
-(defun gemini-send-input ()
-  "入力バッファの内容をgemini-cliに送信する。"
-  (interactive)
-  (let ((input (string-trim (buffer-substring-no-properties
-                             (point-min) (point-max))))
-        (vbuf (gemini--get-vterm-buffer)))
-    (when (string-empty-p input)
-      (user-error "入力が空です"))
-    (unless vbuf
-      (user-error "gemini vtermバッファが見つかりません"))
-    ;; vtermウィンドウを選択して送信
-    (gemini--with-vterm-window
-     (lambda ()
-       ;; まずCtrl-Uで現在行をクリア（TAB補完の残りを消す）
-       (vterm-send-key "u" nil nil t)
-       (sit-for 0.05)
-       (vterm-send-string input)
-       (sit-for 0.1)
-       (vterm-send-return)))
-    ;; 入力バッファをクリア
-    (erase-buffer)
-    ;; vtermバッファを最下部にスクロール
-    (let ((vwin (get-buffer-window vbuf)))
-      (when vwin
-        (with-selected-window vwin
-          (goto-char (point-max)))))))
-
-(defun gemini-tab-complete ()
-  "入力バッファの内容でgemini-cliのTAB補完を実行する。"
-  (interactive)
-  (let ((input (buffer-substring-no-properties (point-min) (point-max)))
-        (vbuf (gemini--get-vterm-buffer)))
-    (unless vbuf
-      (user-error "gemini vtermバッファが見つかりません"))
-    ;; vtermウィンドウを選択して補完実行
-    (gemini--with-vterm-window
-     (lambda ()
-       ;; Ctrl-Uで現在行をクリアしてから入力を送信
-       (vterm-send-key "u" nil nil t)
-       (sit-for 0.05)
-       (vterm-send-string input)
-       (sit-for 0.05)
-       ;; TABを送信
-       (vterm-send-key "<tab>")))
-    ;; 補完結果を待つ
-    (sit-for gemini-completion-wait)
-    ;; vtermの最終行を読み取る
-    (let* ((last-line (gemini--vterm-last-line))
-           (completed (string-trim (gemini--strip-prompt last-line))))
-      ;; 入力バッファを更新（補完結果が空でなければ常に更新）
-      (when (not (string-empty-p completed))
-        (erase-buffer)
-        (insert completed)))))
-
-(defun gemini-toggle-auto-accept ()
-  "gemini-cliにShift-TABを送信してauto-accepting editsをトグルする。"
-  (interactive)
-  (let ((vbuf (gemini--get-vterm-buffer)))
-    (unless vbuf
-      (user-error "gemini vtermバッファが見つかりません"))
-    (gemini--with-vterm-window
-     (lambda ()
-       (vterm-send-key "<backtab>")))))
+(defvar gemini-cli-command "gemini"
+  "The command to start gemini-cli.")
 
 (defvar gemini-input-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'gemini-send-input)
-    (define-key map (kbd "<tab>") #'gemini-tab-complete)
-    (define-key map (kbd "TAB") #'gemini-tab-complete)
-    (define-key map (kbd "S-<tab>") #'gemini-toggle-auto-accept)
+    (define-key map (kbd "TAB") #'gemini-complete-input)
+    (define-key map (kbd "<backtab>") #'gemini-send-backtab)
+    (define-key map [backtab] #'gemini-send-backtab)
+    (define-key map (kbd "S-<tab>") #'gemini-send-backtab)
     map)
-  "gemini-input-mode用キーマップ。")
+  "Keymap for `gemini-input-mode'.")
 
-(define-derived-mode gemini-input-mode fundamental-mode "Gemini Input"
-  "gemini-cliへの入力を行うためのメジャーモード。
+(define-derived-mode gemini-input-mode text-mode "Gemini-Input"
+  "Major mode for gemini input buffer.
+\\{gemini-input-mode-map}"
+  (setq-local cursor-type 'box))
 
-\\{gemini-input-mode-map}")
+(defun gemini--ensure-visible ()
+  "Ensure the *gemini-vterm* buffer is visible above the current input buffer.
+If it is not visible, the original top-bottom split layout is restored."
+  (let ((vterm-buf (get-buffer "*gemini-vterm*"))
+        (input-buf (current-buffer)))
+    (when (and vterm-buf (not (get-buffer-window vterm-buf)))
+      (delete-other-windows)
+      (let ((window (split-window-vertically -12)))
+        (set-window-buffer (selected-window) vterm-buf)
+        (set-window-buffer window input-buf)
+        (select-window window)))))
 
-(defun gemini--cleanup ()
-  "geminiバッファが削除された時のクリーンアップ処理。"
-  (remove-hook 'window-selection-change-functions #'gemini--window-selection-hook))
+(defun gemini-send-input ()
+  "Send the current input buffer content to the gemini vterm and execute it."
+  (interactive)
+  (gemini--ensure-visible)
+  (let ((input (string-trim-right (buffer-string)))
+        (vterm-buf (get-buffer "*gemini-vterm*")))
+    (if (not vterm-buf)
+        (message "gemini vterm buffer not found")
+      (with-current-buffer vterm-buf
+        ;; Turn off copy mode to allow streaming text to be visible and auto-scroll
+        (when vterm-copy-mode
+          (vterm-copy-mode -1))
+        ;; Clear current line in terminal (C-a C-k) to measure prompt
+        (vterm-send-key "c" t nil t) ;; Ctrl-C to cancel any previous input just in case
+        (sleep-for 0.1)
+        (vterm-send-return)
+        (sleep-for 0.2)
+        
+        ;; Send the input string and execute it
+        (vterm-send-string input)
+        (sleep-for 0.1)
+        (vterm-send-return))
+      (erase-buffer))))
+
+(defun gemini-send-backtab ()
+  "Press Shift+Tab in vterm (used to accept edits)."
+  (interactive)
+  (gemini--ensure-visible)
+  (let ((vterm-buf (get-buffer "*gemini-vterm*")))
+    (if (not vterm-buf)
+        (message "gemini vterm buffer not found")
+      (with-current-buffer vterm-buf
+        (when vterm-copy-mode
+          (vterm-copy-mode -1))
+        (vterm-send-key "<backtab>")))))
+
+(defun gemini--get-last-line ()
+  "Get the actual last prompt line from the vterm buffer by searching for the prompt character '> '."
+  (save-excursion
+    (goto-char (point-max))
+    (let (found-line)
+      (while (and (> (point) (point-min)) (not found-line))
+        (let ((current-line (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+          ;; Look for a typical prompt containing ">"
+          ;; Gemini-cli prompt looks like "~/.emacs.d (6d4877d*) > "
+          ;; Using a very relaxed match for ">"
+          (if (string-match-p ">" current-line)
+              (setq found-line current-line)
+            (forward-line -1))))
+      ;; Trim trailing whitespaces because vterm pads lines to window width
+      (if found-line
+          (replace-regexp-in-string " +$" "" found-line)
+        ""))))
+
+(defun gemini-complete-input ()
+  "Ask the underlying vterm for completion and update the current line."
+  (interactive)
+  (gemini--ensure-visible)
+  (let* ((input (buffer-substring-no-properties (line-beginning-position) (point)))
+         (vterm-buf (get-buffer "*gemini-vterm*"))
+         prompt line completed)
+    (if (not vterm-buf)
+        (message "gemini vterm buffer not found")
+      (with-current-buffer vterm-buf
+        ;; Turn off copy mode temporarily if on so terminal responds
+        (when vterm-copy-mode (vterm-copy-mode -1))
+        ;; Clear current line in terminal
+        (vterm-send-key "c" nil nil nil t) ;; Ctrl-C to cancel any previous input just in case
+        (sleep-for 0.1)
+        (vterm-send-return)
+        (sleep-for 0.2)
+        
+        ;; Record the length of the bare prompt on this new line
+        (setq prompt (gemini--get-last-line))
+        
+        ;; Now send our input buffer's current line and TAB
+        (vterm-send-string input)
+        (sleep-for 0.1)
+        (vterm-send-key "<tab>")
+        
+        ;; Wait strictly for rendering
+        (sleep-for 0.5)
+        
+        (setq line (gemini--get-last-line)))
+      
+      ;; Extract the clean prompt up to and including the "> " or ">"
+      ;; Force it to contain precisely ONE space after the ">" to avoid placeholder space mismatches.
+      (let* ((clean-prompt (if (string-match "\\(.*>\\)\\s-*" prompt)
+                               (concat (match-string 1 prompt) " ")
+                             prompt))
+             (clean-line (if (string-match "\\(.*>\\)\\s-\\{2,\\}\\(.*\\)" line)
+                             (concat (match-string 1 line) " " (match-string 2 line))
+                           ;; if it's already " > " or " >/help" ensure 1 space
+                           (if (string-match "\\(.*>\\)\\s-*\\(.*\\)" line)
+                               (concat (match-string 1 line) " " (match-string 2 line))
+                             line))))
+        
+        ;; Debug logs to *Messages* buffer
+        (message "GEMINI-DEBUG: input='%s'" input)
+        (message "GEMINI-DEBUG: prompt='%s' -> clean-prompt='%s' (len %d)" prompt clean-prompt (length clean-prompt))
+        (message "GEMINI-DEBUG: line='%s' -> clean-line='%s' (len %d)" line clean-line (length clean-line))
+        
+        ;; If the line starts with the clean prompt
+        (when (string-prefix-p clean-prompt clean-line)
+          (setq completed (substring clean-line (length clean-prompt)))
+          (message "GEMINI-DEBUG: extracted completed='%s'" completed))
+        
+        (if (and completed 
+                   (> (length completed) 0)
+                   (not (string= input completed)))
+            (progn
+              (message "GEMINI-DEBUG: Replacing input buffer text!")
+              (delete-region (line-beginning-position) (point))
+              (insert completed))
+          (message "GEMINI-DEBUG: Condition not met var: completed=%S, (string= input completed)=%S" 
+                   completed (string= input completed)))))))
+
+(defun gemini-vterm-window-change (frame)
+  "Toggle vterm-copy-mode automatically based on window selection."
+  (let ((buf (window-buffer (selected-window))))
+    (if (and (buffer-live-p buf)
+             (string= (buffer-name buf) "*gemini-vterm*"))
+        ;; Entered the vterm buffer -> enable copy mode to just view
+        (with-current-buffer buf
+          (unless vterm-copy-mode
+            (vterm-copy-mode 1)))
+      ;; Switched away from vterm buffer -> disable copy mode so it updates behind the scenes
+      (let ((vterm-buf (get-buffer "*gemini-vterm*")))
+        (when (and vterm-buf (buffer-live-p vterm-buf))
+          (with-current-buffer vterm-buf
+            (when vterm-copy-mode
+              (vterm-copy-mode -1))))))))
+
+(add-hook 'window-selection-change-functions #'gemini-vterm-window-change)
 
 ;;;###autoload
 (defun gemini ()
-  "gemini-cliをvtermで起動し、入力用バッファを作成する。"
+  "Start gemini-cli in a vterm, enable copy-mode, and create an input buffer."
   (interactive)
-  ;; 既存バッファがあれば再利用
-  (if (and (gemini--get-vterm-buffer) (gemini--get-input-buffer))
-      (progn
-        (switch-to-buffer gemini--vterm-buffer)
-        (delete-other-windows)
-        (let ((win (split-window-below -10)))
-          (set-window-buffer win gemini--input-buffer)
-          (select-window win)))
-    ;; 新規作成
-    ;; vtermバッファを作成してgemini-cliを起動
-    (require 'vterm)
-    (let ((vterm-shell gemini-cli-command))
-      (vterm gemini-vterm-buffer-name))
-    (setq gemini--vterm-buffer (get-buffer gemini-vterm-buffer-name))
-    ;; vtermバッファ削除時にhookをクリーンアップ
-    (with-current-buffer gemini--vterm-buffer
-      (add-hook 'kill-buffer-hook #'gemini--cleanup nil t))
-    ;; ウィンドウ選択変更時にcopy-modeを切り替えるhookを登録
-    (add-hook 'window-selection-change-functions #'gemini--window-selection-hook)
-    ;; ウィンドウを分割して入力バッファを作成
+  (let ((vterm-buf (get-buffer "*gemini-vterm*"))
+        (input-buf (get-buffer-create "*gemini-input*")))
+    
+    (unless (and vterm-buf (buffer-live-p vterm-buf))
+      ;; Disable ask before kill for the new buffer created by vterm
+      (let ((vterm-buffer-name "*gemini-vterm*"))
+        (save-window-excursion
+          (setq vterm-buf (vterm "*gemini-vterm*"))
+          (sleep-for 0.5)
+          (vterm-send-string gemini-cli-command)
+          (vterm-send-return)
+          (sleep-for 0.5))))
+          
+    (with-current-buffer vterm-buf
+      ;; Ensure copy mode is off initially so we can see the streaming output
+      (when vterm-copy-mode
+        (vterm-copy-mode -1))
+      (goto-char (point-max)))
+        
+    (with-current-buffer input-buf
+      (unless (eq major-mode 'gemini-input-mode)
+        (gemini-input-mode)))
+        
     (delete-other-windows)
-    (let ((win (split-window-below -10)))
-      (setq gemini--input-buffer (get-buffer-create gemini-input-buffer-name))
-      (set-window-buffer win gemini--input-buffer)
-      (select-window win)
-      (with-current-buffer gemini--input-buffer
-        (gemini-input-mode)))))
+    (let ((window (split-window-vertically -12)))
+      (set-window-buffer (selected-window) vterm-buf)
+      (set-window-buffer window input-buf)
+      (select-window window))))
 
 (provide 'gemini-mode)
 ;;; gemini-mode.el ends here

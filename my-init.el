@@ -376,6 +376,9 @@
 ;; set minimum severity level for displaying the warning buffer
 (setq warning-minimum-level :error)
 
+;; 外部での変更を検知して自動でバッファを最新にする
+(global-auto-revert-mode 1)
+
 ;; ----------------------------------------------------------------
 ;; backup
 ;; ----------------------------------------------------------------
@@ -688,6 +691,9 @@ With argument ARG, do this that many times."
 ;         ("M-y" . counsel-yank-pop)
          ("M-x" . counsel-M-x)
          ("C-c m" . counsel-imenu))
+  :init
+  ;; 起動直後からivyを有効にする
+  (ivy-mode 1)
   :custom
   (
    ;; `ivy-switch-buffer' (C-x b) のリストに recent files と bookmark を含める．
@@ -943,6 +949,11 @@ With argument ARG, do this that many times."
   (prog-mode-hook . highlight-symbol-nav-mode) ; ソースコードにおいてM-p/M-nでシンボル間を移動
   :custom
   (highlight-symbol-idle-delay . 1.0)  ;1秒後自動ハイライトされるようになる
+  :config
+  ;;  デフォルトのハイライトはコメント内で見にくいので変更
+  (set-face-attribute 'highlight-symbol-face nil
+                      :foreground "white"
+                      :background "MediumPurple4")
   :bind (("M-g h" . highlight-symbol-at-point)          ; ポイント位置のシンボルをハイライト
          ("M-g q" . highlight-symbol-query-replace)))
 
@@ -1086,7 +1097,7 @@ With argument ARG, do this that many times."
    (lsp-ui-flycheck-enable . t)
    
    ;; lsp-ui-sideline
-   (lsp-ui-sideline-enable . t)
+   (lsp-ui-sideline-enable . nil)
    (lsp-ui-sideline-ignore-duplicate . t)
    (lsp-ui-sideline-show-symbol . t)
    (lsp-ui-sideline-show-hover . t)
@@ -1494,18 +1505,6 @@ With argument ARG, do this that many times."
 
 
 ;; ----------------------------------------------------------------
-;;  projectile
-;; ----------------------------------------------------------------
-(leaf projectile
-  :ensure t
-  :require t
-  :bind
-  (projectile-mode-map ("C-x p" . projectile-command-map))
-  :config
-  (setq projectile-completion-system completion-system)
-  (projectile-mode 1))
-
-;; ----------------------------------------------------------------
 ;;  magit
 ;; ----------------------------------------------------------------
 (leaf magit
@@ -1562,6 +1561,7 @@ With argument ARG, do this that many times."
   :ensure t)
 
 (leaf ellama
+  :disabled t
   :if (executable-find "ollama")
   :ensure t
   :require t llm-ollama                 ; t is needed for ellama-instant, ellama-stream
@@ -1675,3 +1675,17 @@ With argument ARG, do this that many times."
   :require t)
 
 
+;; ----------------------------------------------------------------
+;; diff highlight
+;; ----------------------------------------------------------------
+(leaf diff-hl
+  :ensure t
+  :global-minor-mode global-diff-hl-mode
+  :config
+  ;; バッファの変更をリアルタイムに反映（オンザフライ）
+  (diff-hl-flydiff-mode 1)
+  ;; フリンジ部分クリックで差分の内容を表示
+  (diff-hl-show-hunk-mouse-mode 1))
+
+;;(setq mac-ime-debug-level 2)
+(global-set-key "\C-x:" 'eval-expression)

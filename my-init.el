@@ -149,6 +149,7 @@
 
 ;; ----------------------------------------------------------------
 ;; leaf
+;; パッケージアップデート方法は　`M-x package-vc-upgrade`　または　`M-x package-upgrade-all`
 ;; ----------------------------------------------------------------
 ;; <leaf-install-code>
 (eval-and-compile
@@ -213,11 +214,12 @@
   ;; ---------------- mac
   (leaf mac-ime
     :if (and (not debug-mac-ime) system-darwin-p)
-    :vc (:url "https://github.com/ma0001/mac-ime.git" :branch "develop")
+    :ensure t
     :config
+    ;; input methodを"mac-ime"に設定
     (setq default-input-method "mac-ime")
-    (mac-ime-enable)
-    (setq mac-ime-debug-level 0))
+    ;; モジュールの有効化 (イベント監視の開始)
+    (mac-ime-enable))
   (leaf mac-ime-debug
     :if (and debug-mac-ime system-darwin-p)
     :config
@@ -225,7 +227,7 @@
     (require 'mac-ime)
     (setq default-input-method "mac-ime")
     (mac-ime-enable)
-    (setq mac-ime-debug-level 0))
+    (setq mac-ime-debug-level 2))
   ;; ---------------- win
   (leaf tr-ime
     :if system-windows-p

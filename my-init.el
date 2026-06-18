@@ -326,8 +326,15 @@
 ;ただしC-w したときは大文字考慮する
 (setq search-upper-case t)
 
-;折り返し行も含めて次行へ移動
-(setq line-move-visual nil)
+;通常は折り返し行も含めて次行へ移動（マクロ記憶・実行時のみ物理行移動）
+(setq line-move-visual t)
+(defun my/line-move-logical-during-macro (orig-fun &rest args)
+  "Make `line-move' act as logical line movement during macro definition and execution."
+  (let ((line-move-visual (if (or defining-kbd-macro executing-kbd-macro)
+                              nil
+                            line-move-visual)))
+    (apply orig-fun args)))
+(advice-add 'line-move :around #'my/line-move-logical-during-macro)
 
 (setq visible-bell nil)
 

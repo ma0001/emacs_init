@@ -80,7 +80,8 @@
                                       'ccls)
                                      (t nil)))
 
-(defvar completion-system 'ivy)
+;; completion-system: 'vertico, 'ivy, 'helm, or nil
+(defvar completion-system 'vertico)
 
 (defvar greping-system 'rg)
 
@@ -443,6 +444,7 @@
    `(header-line ((t (:foreground "#51afef" :background "#505662"))))
    ;; elispでのcompletion-at-point での選択表示が分かりにくいので変更
    `(ivy-current-match ((t :background "#1a4b77" :foreground "white"  t :extend t)))
+   `(vertico-current ((t :background "#1a4b77" :foreground "white"  t :extend t)))
    ;; markdown のヘッダ色が気に入らない
    `(markdown-header-face ((t :inherit 'bold :foreground ,(doom-color 'orange)))))
 
@@ -582,7 +584,7 @@ With argument ARG, do this that many times."
 (setenv "GTAGSLIBPATH" "C:/pro3/snap7/std;C:/qnx660/target")
 
 (leaf gtags
-  :if (not completion-system)
+  :if (memq completion-system '(nil vertico))
   :commands (gtags-mode)
   :init
   ;; to use gtags.el that shipped with gtags
@@ -723,6 +725,192 @@ With argument ARG, do this that many times."
     (ivy-rich-mode 1)))
 
 ;; ----------------------------------------------------------------
+;; vertico ecosystem
+;; ----------------------------------------------------------------
+(leaf vertico
+  :if (eq completion-system 'vertico)
+  :ensure t
+  :init
+  (vertico-mode 1)
+  :custom
+  ((vertico-count . 15)
+   (vertico-cycle . t)
+   (vertico-resize . t))
+  :config
+  (leaf vertico-directory
+    :after vertico
+    :bind (vertico-map
+           ("RET" . vertico-directory-enter)
+           ("DEL" . vertico-directory-delete-char)
+           ("M-DEL" . vertico-directory-delete-word))
+    :hook (rfn-eshadow-update-overlay-hook . vertico-directory-tidy)))
+
+(leaf orderless
+  :if (eq completion-system 'vertico)
+  :ensure t
+  :custom
+  ((completion-styles . '(orderless basic))
+   (completion-category-defaults . nil)
+   (completion-category-overrides . '((file (styles partial-completion))))))
+
+(leaf marginalia
+  :if (eq completion-system 'vertico)
+  :ensure t
+  :init
+  (marginalia-mode 1)
+  :bind (:minibuffer-local-map
+         ("M-A" . marginalia-cycle)))
+
+(leaf consult
+  :if (eq completion-system 'vertico)
+  :ensure t
+  :init
+  (recentf-mode 1)
+  (savehist-mode 1)
+
+  (defvar-local my-consult-current-search nil)
+
+  (defun my-consult-record-search-command ()
+    (let ((cmd (or this-command real-this-command)))
+      (when (memq cmd '(consult-line
+                       my-consult-line-thing-at-point
+                       my-consult-line-from-isearch
+                       consult-line-multi
+                       my-consult-line-multi-from-line
+                       consult-ripgrep
+                       my-consult-ripgrep-from-line-multi
+                       my-consult-line-from-ripgrep))
+        (setq-local my-consult-current-search
+                    (cond
+                     ((memq cmd '(consult-line my-consult-line-thing-at-point my-consult-line-from-isearch my-consult-line-from-ripgrep))
+                      'consult-line)
+                     ((memq cmd '(consult-line-multi my-consult-line-multi-from-line))
+                      'consult-line-multi)
+                     ((memq cmd '(consult-ripgrep my-consult-ripgrep-from-line-multi))
+                      'consult-ripgrep))))))
+
+  (add-hook 'minibuffer-setup-hook #'my-consult-record-search-command)
+
+  (defun my-consult-current-search-type ()
+    "Return the current consult search type ('line, 'line-multi, or 'ripgrep)."
+    (let ((prompt (minibuffer-prompt))
+          (hist minibuffer-history-variable)
+          (cmd my-consult-current-search))
+      (cond
+       ;; line-multi check (must come before line because of prompt prefix)
+       ((or (eq hist 'consult--line-multi-history)
+            (eq cmd 'consult-line-multi)
+            (and prompt (string-match-p "\\`Go to line (" prompt)))
+        'line-multi)
+
+       ;; line check
+       ((or (eq hist 'consult--line-history)
+            (eq cmd 'consult-line)
+            (and prompt (string-match-p "\\`Go to line" prompt)))
+        'line)
+
+       ;; ripgrep check
+       ((or (eq hist 'consult--grep-history)
+            (eq cmd 'consult-ripgrep)
+            (and prompt (string-match-p "\\`Ripgrep" prompt)))
+        'ripgrep))))
+
+  (defun my-consult-quit-and-run (fn)
+    "Quit current minibuffer and run FN in the target buffer."
+    (let ((win (or (minibuffer-selected-window) (consult--original-window))))
+      (run-at-time 0 nil
+                   (lambda ()
+                     (when (window-live-p win)
+                       (select-window win)
+                       (with-current-buffer (window-buffer win)
+                         (funcall fn))))))
+    (minibuffer-quit-recursive-edit))
+
+  (defun my-consult-line-thing-at-point ()
+    "Search buffer with `consult-line', pre-filling with symbol at point if present."
+    (interactive)
+    (let ((symbol (thing-at-point 'symbol t)))
+      (consult-line symbol)))
+
+  (defun my-consult-line-from-isearch ()
+    "Switch from isearch to `consult-line` with current search string."
+    (interactive)
+    (let ((query (if isearch-regexp isearch-string (regexp-quote isearch-string))))
+      (isearch-exit)
+      (setq this-command 'consult-line)
+      (consult-line query)))
+
+  (defun my-consult-line-multi-from-line ()
+    "Switch from `consult-line` to `consult-line-multi` (all open buffers)."
+    (interactive)
+    (let ((input (minibuffer-contents-no-properties)))
+      (my-consult-quit-and-run
+       (lambda ()
+         (setq this-command 'consult-line-multi)
+         (consult-line-multi 'all (if (string-empty-p input) nil input))))))
+
+  (defun my-consult-ripgrep-from-line-multi ()
+    "Switch from `consult-line-multi` to `consult-ripgrep`."
+    (interactive)
+    (let ((input (minibuffer-contents-no-properties)))
+      (my-consult-quit-and-run
+       (lambda ()
+         (setq this-command 'consult-ripgrep)
+         (consult-ripgrep nil (if (string-empty-p input) nil input))))))
+
+  (defun my-consult-line-from-ripgrep ()
+    "Switch from `consult-ripgrep` back to `consult-line`."
+    (interactive)
+    (let* ((input (minibuffer-contents-no-properties))
+           (clean (substring-no-properties (or (car (consult--split-perl input)) ""))))
+      (my-consult-quit-and-run
+       (lambda ()
+         (setq this-command 'consult-line)
+         (consult-line (if (string-empty-p clean) nil clean))))))
+
+  (defun my-consult-search-cycle ()
+    "Cycle search between `consult-line', `consult-line-multi`, and `consult-ripgrep'.
+If not in one of these searches, fallback to `exit-minibuffer'."
+    (interactive)
+    (pcase (my-consult-current-search-type)
+      ('line
+       (my-consult-line-multi-from-line))
+      ('line-multi
+       (my-consult-ripgrep-from-line-multi))
+      ('ripgrep
+       (my-consult-line-from-ripgrep))
+      (_
+       (exit-minibuffer))))
+
+  (with-eval-after-load 'isearch
+    (define-key isearch-mode-map (kbd "C-j") #'my-consult-line-from-isearch))
+  (with-eval-after-load 'vertico
+    (define-key vertico-map (kbd "C-j") #'my-consult-search-cycle))
+
+  :custom
+  ((consult-narrow-key . "<")
+   (consult-line-start-from-top . nil))
+  :bind (("C-x b" . consult-buffer)
+         ("M-y" . consult-yank-pop)
+         ("C-c m" . consult-imenu)
+         ("C-c s" . my-consult-line-thing-at-point)
+         ("<S-tab>" . consult-ripgrep)
+         ("M-g g" . consult-goto-line)
+         ("M-g M-g" . consult-goto-line)))
+
+(leaf embark
+  :if (eq completion-system 'vertico)
+  :ensure t
+  :bind (("C-." . embark-act)
+         ("M-." . embark-dwim)
+         ("C-h B" . embark-bindings))
+  :config
+  (leaf embark-consult
+    :ensure t
+    :hook
+    (embark-collect-mode-hook . consult-preview-at-point-mode)))
+
+;; ----------------------------------------------------------------
 ;; yasnippet
 ;; ----------------------------------------------------------------
 (leaf yasnippet
@@ -750,6 +938,11 @@ With argument ARG, do this that many times."
   :ensure t
   :init
   :bind (("C-c y" . ivy-yasnippet)))
+
+(leaf consult-yasnippet
+  :if (eq completion-system 'vertico)
+  :ensure t
+  :bind (("C-c y" . consult-yasnippet)))
 
 ;; ----------------------------------------------------------------
 ;; company
@@ -1236,6 +1429,7 @@ With argument ARG, do this that many times."
 ;;  swiper
 ;; ----------------------------------------------------------------
 (leaf swiper
+  :if (eq completion-system 'ivy)
   :ensure t
   :config
   (defun my-swiper-all-from-swiper ()
@@ -1323,6 +1517,10 @@ With argument ARG, do this that many times."
 			      (universal-mark-advice-add 'swiper-isearch-thing-at-point)
 			      (universal-mark-advice-add 'swiper-all-thing-at-point )))
   (eval-after-load 'cousel '(universal-mark-advice-add 'counsel-rg ))
+  (eval-after-load 'consult '(progn
+                               (universal-mark-advice-add 'consult-line)
+                               (universal-mark-advice-add 'consult-line-multi)
+                               (universal-mark-advice-add 'consult-ripgrep)))
   (eval-after-load 'ace-jump-mode '(universal-mark-advice-add 'ace-jump-mode ))
   :bind
   ("M-," . universal-mark-previous-location)
@@ -1452,8 +1650,10 @@ With argument ARG, do this that many times."
       (copilot-complete)))
   (set-face-attribute 'copilot-overlay-face nil
 		      :underline "purple")
-  ;; ivy-yasnippetのオーバレイを消さないように、実行前にcopilotのオーバーレイを消す
+  ;; ivy-yasnippet / consult-yasnippetのオーバレイを消さないように、実行前にcopilotのオーバーレイを消す
   (advice-add 'ivy-yasnippet :before #'copilot-clear-overlay)
+  (eval-after-load 'consult-yasnippet
+    '(advice-add 'consult-yasnippet :before #'copilot-clear-overlay))
   :bind (copilot-mode-map
          ("S-<tab>" . my/copilot-tab)
 	 ("C-c j" . my/copilot-tab)

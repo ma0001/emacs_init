@@ -184,9 +184,10 @@ pyenv local <env-name>
 
 
 # rust
+brewは使用せずにrustupで入れる
+https://rust-lang.org/ja/learn/get-started/
 ```
-brew install rustup-init
-rustup-init
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 要シェルの再起動

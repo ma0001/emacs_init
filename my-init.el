@@ -600,6 +600,36 @@ With argument ARG, do this that many times."
   (setq gtags-auto-update 1)            ; gtags セーブでアップデート
   (defun my-select-tag-other-window ()
     (save-excursion (gtags-select-tag-other-window)))
+
+  ;; Vertico等で全シンボルが展開されるのを防ぐため、カーソル位置のシンボルを初期入力に設定
+  (defun my-gtags-with-initial-input (orig-fn &rest args)
+    "Make `completing-read' use default token in prompt as `initial-input'."
+    (let* ((orig-completing-read (symbol-function 'completing-read))
+           (my-completing-read
+            (lambda (prompt collection &optional predicate require-match initial-input hist def inherit-input-method)
+              (let* ((default-tag (when (and (stringp prompt)
+                                            (string-match "(default \\([^)]+\\))" prompt))
+                                    (match-string 1 prompt)))
+                     (clean-prompt (if default-tag
+                                       (replace-regexp-in-string " *(default [^)]+) *" " " prompt)
+                                     prompt)))
+                (funcall orig-completing-read
+                         clean-prompt
+                         collection
+                         predicate
+                         require-match
+                         (or initial-input default-tag)
+                         hist
+                         (or def default-tag)
+                         inherit-input-method)))))
+      (fset 'completing-read my-completing-read)
+      (unwind-protect
+          (apply orig-fn args)
+        (fset 'completing-read orig-completing-read))))
+
+  (advice-add 'gtags-find-tag :around #'my-gtags-with-initial-input)
+  (advice-add 'gtags-find-rtag :around #'my-gtags-with-initial-input)
+  (advice-add 'gtags-find-symbol :around #'my-gtags-with-initial-input)
   :bind (gtags-mode-map
          ("M-?" . gtags-find-rtag)
          ("M-." . gtags-find-tag)

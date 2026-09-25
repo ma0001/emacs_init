@@ -360,7 +360,7 @@
 (custom-set-faces
  '(hl-line ((t (:background nil
                 ;; _が見えなくなる対応、position に正の整数を指定すると、ベースラインより下に描画されます
-                :underline (:color "#333631" :position 5) 
+                :underline (:color "#333631" :position t) 
                 :extend t)))))
  
 (set-cursor-color "orange")
@@ -693,7 +693,7 @@ With argument ARG, do this that many times."
 ;         ("M-y" . counsel-yank-pop)
          ("M-x" . counsel-M-x)
          ("C-c m" . counsel-imenu))
-  :init
+  :config
   ;; 起動直後からivyを有効にする
   (ivy-mode 1)
   :custom
@@ -730,13 +730,12 @@ With argument ARG, do this that many times."
 (leaf vertico
   :if (eq completion-system 'vertico)
   :ensure t
-  :init
-  (vertico-mode 1)
   :custom
   ((vertico-count . 15)
    (vertico-cycle . t)
    (vertico-resize . t))
   :config
+  (vertico-mode 1)
   (leaf vertico-directory
     :after vertico
     :bind (vertico-map
@@ -756,7 +755,7 @@ With argument ARG, do this that many times."
 (leaf marginalia
   :if (eq completion-system 'vertico)
   :ensure t
-  :init
+  :config
   (marginalia-mode 1)
   :bind (:minibuffer-local-map
          ("M-A" . marginalia-cycle)))
@@ -764,9 +763,11 @@ With argument ARG, do this that many times."
 (leaf consult
   :if (eq completion-system 'vertico)
   :ensure t
-  :init
+  :config
   (recentf-mode 1)
   (savehist-mode 1)
+  ;; previewはC-l
+  (setq consult-preview-key "C-l")
 
   (defvar-local my-consult-current-search nil)
 
@@ -903,12 +904,7 @@ If not in one of these searches, fallback to `exit-minibuffer'."
   :ensure t
   :bind (("C-." . embark-act)
          ("M-." . embark-dwim)
-         ("C-h B" . embark-bindings))
-  :config
-  (leaf embark-consult
-    :ensure t
-    :hook
-    (embark-collect-mode-hook . consult-preview-at-point-mode)))
+         ("C-h B" . embark-bindings)))
 
 ;; ----------------------------------------------------------------
 ;; yasnippet
@@ -936,7 +932,7 @@ If not in one of these searches, fallback to `exit-minibuffer'."
 (leaf ivy-yasnippet
   :if (eq completion-system 'ivy)
   :ensure t
-  :init
+  :config
   :bind (("C-c y" . ivy-yasnippet)))
 
 (leaf consult-yasnippet
@@ -1155,7 +1151,7 @@ If not in one of these searches, fallback to `exit-minibuffer'."
 ;; ----------------------------------------------------------------
 (leaf beacon
   :ensure t
-  :init
+  :config
   (beacon-mode 1))
 
 ;; ----------------------------------------------------------------
@@ -1508,7 +1504,7 @@ If not in one of these searches, fallback to `exit-minibuffer'."
 ;; ----------------------------------------------------------------
 (leaf universal-mark
   :commands universal-mark-mode
-  :init
+  :config
   (universal-mark-mode t)
   :config
   (universal-mark-advice-add 'isearch-forward)

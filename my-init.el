@@ -764,6 +764,9 @@ With argument ARG, do this that many times."
   ((vertico-count . 15)
    (vertico-cycle . t)
    (vertico-resize . t))
+  :init
+  ;; 現在のモードで実行できないコマンドをM-x候補から除外
+  (setq read-extended-command-predicate #'command-completion-default-include-p)
   :config
   (vertico-mode 1)
   (leaf vertico-directory
@@ -773,6 +776,22 @@ With argument ARG, do this that many times."
            ("DEL" . vertico-directory-delete-char)
            ("M-DEL" . vertico-directory-delete-word))
     :hook (rfn-eshadow-update-overlay-hook . vertico-directory-tidy)))
+
+(leaf savehist
+  :if (eq completion-system 'vertico)
+  :custom
+  ((history-length . 1000)
+   (history-delete-duplicates . nil)
+   (savehist-save-minibuffer-history . t)
+   (savehist-additional-variables . '(kill-ring search-ring regexp-search-ring)))
+  :config
+  (savehist-mode 1))
+
+(leaf recentf
+  :custom
+  ((recentf-max-saved-items . 100))
+  :config
+  (recentf-mode 1))
 
 (leaf orderless
   :if (eq completion-system 'vertico)
@@ -794,8 +813,6 @@ With argument ARG, do this that many times."
   :if (eq completion-system 'vertico)
   :ensure t
   :config
-  (recentf-mode 1)
-  (savehist-mode 1)
   ;; previewはC-l
   (setq consult-preview-key "C-l")
 

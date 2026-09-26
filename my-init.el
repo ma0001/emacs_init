@@ -1695,7 +1695,20 @@ If not in one of these searches, fallback to `exit-minibuffer'."
   (setopt copilot-chat-frontend 'org)
   ;;magit commits
   (add-hook 'git-commit-setup-hook 'copilot-chat-mode))
-  
+
+;; ----------------------------------------------------------------
+;;  ai-code (AI Code Interface)
+;;  https://github.com/tninja/ai-code-interface.el
+;; ----------------------------------------------------------------
+(leaf ai-code
+  :ensure t
+  :bind (("C-c a" . ai-code-menu))
+  :config
+  (ai-code-set-backend 'antigravity)
+  ;; Magit連携（MagitポップアップにAIメニューを追加）
+  (with-eval-after-load 'magit
+    (ai-code-magit-setup-transients)))
+
 ;; ----------------------------------------------------------------
 ;;  plantUML
 ;; 	https://plantuml.com

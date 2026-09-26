@@ -1636,20 +1636,20 @@ If not in one of these searches, fallback to `exit-minibuffer'."
 ;; ----------------------------------------------------------------
 ;;  ORG
 ;; ----------------------------------------------------------------
-(global-set-key "\C-cc" 'org-capture)
-(setq org-capture-templates
-      '(("t" "TODO" entry (file+headline "~/org/TODO.org" "Inbox")
+(leaf org
+  :bind (("C-c o c" . org-capture)
+         ("C-c o a" . org-agenda)
+         ("C-c o l" . org-store-link))
+  :custom
+  ((org-startup-truncated . nil)
+   (org-capture-templates
+    . '(("t" "TODO" entry (file+headline "~/org/TODO.org" "Inbox")
          "*** TODO %?\n    created : %T\n    deadline : %t\n")
-	("m" "Memo" entry (file+headline "~/org/memo.org" "Memo")
-         "* %?\nEntered on %U\n %i\n %a")
-        ))
-(global-set-key "\C-ca" 'org-agenda)
-(setq org-agenda-custom-commands
-      '(
-        ("o" . "Original agenda view") ; description for "o" prefix
-        ("ot" todo "TODO")
-        ))
-(setq org-startup-truncated nil)
+        ("m" "Memo" entry (file+headline "~/org/memo.org" "Memo")
+         "* %?\nEntered on %U\n %i\n %a")))
+   (org-agenda-custom-commands
+    . '(("o" . "Original agenda view")
+        ("ot" todo "TODO")))))
 
 ;; ----------------------------------------------------------------
 ;;  Copilot

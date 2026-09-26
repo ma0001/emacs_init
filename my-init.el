@@ -941,15 +941,14 @@ If not in one of these searches, fallback to `exit-minibuffer'."
 ;; ----------------------------------------------------------------
 (leaf yasnippet
   :ensure t
-  :config
-  (leaf yasnippet-snippets
-    :ensure t)
-  :bind
+  :require t
   :mode ("emacs.+/snippets/" . snippet-mode)
   :custom
   ;; time_t<tab>などでsnippet展開しないようにする
   (yas-key-syntaxes . '(yas-try-key-from-whitespace "w_.()" "w_." "w_"))
   :config
+  (leaf yasnippet-snippets
+    :ensure t)
   (yas-global-mode 1))
 
 (leaf helm-c-yasnippet
@@ -1677,9 +1676,11 @@ If not in one of these searches, fallback to `exit-minibuffer'."
   (set-face-attribute 'copilot-overlay-face nil
 		      :underline "purple")
   ;; ivy-yasnippet / consult-yasnippetのオーバレイを消さないように、実行前にcopilotのオーバーレイを消す
-  (advice-add 'ivy-yasnippet :before #'copilot-clear-overlay)
+  ;; ※ copilot-clear-overlay は (interactive) な関数のため、そのまま :before に渡すと
+  ;; アドバイス対象の対話形式が上書きされて引数エラーが発生するため lambda でラップする
+  (advice-add 'ivy-yasnippet :before (lambda (&rest _) (copilot-clear-overlay)))
   (eval-after-load 'consult-yasnippet
-    '(advice-add 'consult-yasnippet :before #'copilot-clear-overlay))
+    '(advice-add 'consult-yasnippet :before (lambda (&rest _) (copilot-clear-overlay))))
   :bind (copilot-mode-map
          ("S-<tab>" . my/copilot-tab)
 	 ("C-c j" . my/copilot-tab)

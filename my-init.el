@@ -1714,17 +1714,18 @@ If not in one of these searches, fallback to `exit-minibuffer'."
   (add-hook 'git-commit-setup-hook 'copilot-chat-mode))
 
 ;; ----------------------------------------------------------------
-;;  ai-code (AI Code Interface)
-;;  https://github.com/tninja/ai-code-interface.el
+;;  agent-shell (ACP経由でClaude Code等のエージェントを利用)
+;;  https://github.com/xenodium/agent-shell
+;;  C-c a で起動（既存シェルがあれば切替、C-u C-c a で新規作成）
+;;  要ACPアダプタ: npm install -g @agentclientprotocol/claude-agent-acp
 ;; ----------------------------------------------------------------
-(leaf ai-code
+(leaf agent-shell
   :ensure t
-  :bind (("C-c a" . ai-code-menu))
+  :bind (("C-c a" . agent-shell))
   :config
-  (ai-code-set-backend 'antigravity)
-  ;; Magit連携（MagitポップアップにAIメニューを追加）
-  (with-eval-after-load 'magit
-    (ai-code-magit-setup-transients)))
+  ;; `claude /login' 済みのアカウント認証を利用（APIキー不要）
+  (setopt agent-shell-anthropic-authentication
+          (agent-shell-anthropic-make-authentication :login t)))
 
 ;; ----------------------------------------------------------------
 ;;  plantUML

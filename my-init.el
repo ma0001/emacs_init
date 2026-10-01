@@ -630,15 +630,19 @@ With argument ARG, do this that many times."
   (advice-add 'gtags-find-tag :around #'my-gtags-with-initial-input)
   (advice-add 'gtags-find-rtag :around #'my-gtags-with-initial-input)
   (advice-add 'gtags-find-symbol :around #'my-gtags-with-initial-input)
-  :bind (gtags-mode-map
-         ("M-?" . gtags-find-rtag)
-         ("M-." . gtags-find-tag)
-         ("M-g s" . gtags-find-symbol)
-         ("M-g g" . gtags-find-pattern)
-         ("M-g f" . gtags-find-file)
-         ("M-," . gtags-pop-stack)
-         ("M-*" . gtags-pop-stack)
-         ("C-j" . my-select-tag-other-window)))
+  :bind ((gtags-mode-map
+          ("M-?" . gtags-find-rtag)
+          ("M-." . gtags-find-tag)
+          ("M-g s" . gtags-find-symbol)
+          ("M-g g" . gtags-find-pattern)
+          ("M-g f" . gtags-find-file)
+          ("M-," . gtags-pop-stack)
+          ("M-*" . gtags-pop-stack)
+          ("C-j" . my-select-tag-other-window))
+         (gtags-select-mode-map
+          ("M-," . gtags-pop-stack)
+          ("M-*" . gtags-pop-stack))))
+  
 
 (leaf helm-gtags
   :if (eq completion-system 'helm)

@@ -87,6 +87,9 @@
 
 (defvar theme-selection 'doom)
 
+;; tree-sitter: t で有効(*-ts-mode を使用), nil で無効
+(defvar use-tree-sitter t)
+
 ;; debug-mac-imeはackageの読み込みを制御するためearly-init.elで定義している
 
 ;;
@@ -693,6 +696,34 @@ With argument ARG, do this that many times."
   :config
   (setq inferior-lisp-program (executable-find "sbcl"))
   (setq slime-contribs '(slime-repl slime-asdf slime-fancy slime-banner)))
+
+;; ----------------------------------------------------------------
+;; tree-sitter (Emacs 31 組み込み)
+;;   use-tree-sitter が t のとき、対応言語で *-ts-mode を使う
+;;   文法ライブラリが無い場合は初回に確認後 ~/.emacs.d/tree-sitter にビルドする
+;; ----------------------------------------------------------------
+(leaf treesit
+  :if (and use-tree-sitter (fboundp 'treesit-available-p) (treesit-available-p))
+  :custom
+  ((treesit-enabled-modes . t)
+   (treesit-auto-install-grammar . 'ask)
+   (treesit-font-lock-level . 4))
+  :config
+  ;; c-ts-mode では c-mode-common-hook が走らないため、必要な設定をここで行う
+  (defun my-c-ts-mode-setup ()
+    (setq-local tab-width 4)
+    (setq-local c-ts-mode-indent-offset 4)
+    (local-set-key (kbd "M-;") 'my-ins-comment)
+    (when (and (memq completion-system '(nil vertico))
+               (fboundp 'gtags-mode)
+               buffer-file-name
+               (search-file-for-updir buffer-file-name "GTAGS"))
+      (gtags-mode 1))
+    (when c-mode-company-use-lsp
+      (lsp)))
+  (setq c-ts-mode-indent-style 'bsd)
+  (add-hook 'c-ts-base-mode-hook #'my-c-ts-mode-setup)
+  (add-hook 'python-ts-mode-hook #'lsp))
 
 ;; ----------------------------------------------------------------
 ;; c++ c mode

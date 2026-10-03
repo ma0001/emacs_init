@@ -360,11 +360,14 @@
 ;;---------------- cursor
 ;; カーソル行のハイライト
 (global-hl-line-mode 1)
-(custom-set-faces
- '(hl-line ((t (:background nil
-                ;; _が見えなくなる対応、position に正の整数を指定すると、ベースラインより下に描画されます
-                :underline (:color "#333631" :position t) 
-                :extend t)))))
+;; windowsではピクセル荒くて_が消えるのでmacだけ
+(if system-darwin-p
+    (custom-set-faces
+     '(hl-line ((t (:background nil
+				;; _が見えなくなる対応、position に正の整数を指定すると、ベースラインより下に描画されます
+				:underline (:color "#333631" :position t) 
+				:extend t))))))
+
  
 (set-cursor-color "orange")
 (blink-cursor-mode 1)

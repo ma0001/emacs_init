@@ -182,6 +182,15 @@
 ;; </leaf-install-code>
 
 ;; Now you can use leaf!
+;;
+;; :init と :config の使い分け
+;;   :commands / :bind / :hook / :mode / :after など遅延ロード系のキーワードがあると、
+;;   :config は eval-after-load に包まれ、パッケージが読み込まれるまで実行されない。
+;;   そのため起動時に有効にしたいグローバルモード (xxx-mode 1) を :config に書くと有効にならない。
+;;   - 起動時に有効にしたいグローバルモード → :global-minor-mode xxx-mode か :init に書く
+;;     (:init で autoload 関数を呼ぶとパッケージが読み込まれ、続けて :config も実行される)
+;;   - 特定モードだけで有効にしたいモード → :hook
+;;   - advice・変数設定・キーマップ変更など読み込み後でよいもの → :config
 (leaf leaf-tree :ensure t)
 (leaf leaf-convert :ensure t)
 (leaf transient-dwim
@@ -761,7 +770,7 @@ With argument ARG, do this that many times."
 ;         ("M-y" . counsel-yank-pop)
          ("M-x" . counsel-M-x)
          ("C-c m" . counsel-imenu))
-  :config
+  :init
   ;; 起動直後からivyを有効にする
   (ivy-mode 1)
   :custom
@@ -842,8 +851,7 @@ With argument ARG, do this that many times."
 (leaf marginalia
   :if (eq completion-system 'vertico)
   :ensure t
-  :config
-  (marginalia-mode 1)
+  :global-minor-mode marginalia-mode
   :bind (:minibuffer-local-map
          ("M-A" . marginalia-cycle)))
 
@@ -1037,8 +1045,7 @@ If not in one of these searches, fallback to `exit-minibuffer'."
           ("C-n" . company-select-next)
           ("C-p" . company-select-previous)
           ("<tab>" . company-complete-selection)))
-  :config
-  (global-company-mode 1))
+  :global-minor-mode global-company-mode)
 
 ;; ----------------------------------------------------------------
 ;; irony
@@ -1158,8 +1165,7 @@ If not in one of these searches, fallback to `exit-minibuffer'."
   :ensure t
   :hook
   (prog-mode-hook . flyspell-prog-mode)
-  :config
-  (global-flycheck-mode t))
+  :global-minor-mode global-flycheck-mode)
 
 ;; ----------------------------------------------------------------
 ;; flycheck-irony
@@ -1588,7 +1594,7 @@ If not in one of these searches, fallback to `exit-minibuffer'."
 ;; ----------------------------------------------------------------
 (leaf universal-mark
   :commands universal-mark-mode
-  :config
+  :init
   (universal-mark-mode t)
   :config
   (universal-mark-advice-add 'isearch-forward)
@@ -1596,14 +1602,14 @@ If not in one of these searches, fallback to `exit-minibuffer'."
   (eval-after-load 'swiper '(progn
 			      (universal-mark-advice-add 'swiper-isearch-thing-at-point)
 			      (universal-mark-advice-add 'swiper-all-thing-at-point )))
-  (eval-after-load 'cousel '(universal-mark-advice-add 'counsel-rg ))
+  (eval-after-load 'counsel '(universal-mark-advice-add 'counsel-rg ))
   (eval-after-load 'consult '(progn
                                (universal-mark-advice-add 'consult-line)
                                (universal-mark-advice-add 'consult-line-multi)
                                (universal-mark-advice-add 'consult-ripgrep)))
   (eval-after-load 'ace-jump-mode '(universal-mark-advice-add 'ace-jump-mode ))
   :bind
-  ("M-," . universal-mark-previous-location)
+;  ("M-," . universal-mark-previous-location)
   )
   
 ;; ----------------------------------------------------------------

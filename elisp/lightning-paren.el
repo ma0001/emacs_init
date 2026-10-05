@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t; -*-
 ;;;From: tsumura@fml.ec.tmit.ac.jp (TSUMURA Kazumasa)
 ;;;Newsgroups: fj.editor.emacs
 ;;;Subject: upcase-previous-symbol and lightning-open-paren
@@ -107,7 +108,7 @@ Successive execution moves that close paren across following expressions."
         (while (= (setq ch (read-char)) op-char)
           (goto-char cl-pos)
           (delete-char 1)
-          (condition-case err
+          (condition-case nil
               (forward-sexp 1)
             (error (ding t)))                   ;この辺もいい加減……
           (insert cl-char)
@@ -140,7 +141,7 @@ Successive execution moves that close paren across following expressions."
         (while (= (setq ch (read-char)) cl-char)
           (goto-char op-pos)
           (delete-char 1)
-          (condition-case err
+          (condition-case nil
               (backward-sexp 1)
             (error (ding t)))                   ;この辺もいい加減……
           (insert op-char)

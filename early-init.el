@@ -1,4 +1,4 @@
-
+;;; early-init.el  -*- lexical-binding: t; -*-
 ; mac-ime をデバッグモードで起動する場合nil以外にする
 (defvar debug-mac-ime nil)
 (if debug-mac-ime

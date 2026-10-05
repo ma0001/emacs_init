@@ -51,7 +51,7 @@
                ((or (equal fname ".") (equal fname ".."))
                 nil)
                (dirp
-                (if-let ((res (search-file-for-downdir path  filename))) (throw 'found res)))
+                (if-let* ((res (search-file-for-downdir path  filename))) (throw 'found res)))
                ((equal fname filename)
                 (message "hit %s" dir)
                 (throw 'found dir))
@@ -71,7 +71,7 @@
                              (eq system-type 'cygwin)))
 
 (if system-darwin-p
-    (if-let ((dir (search-file-for-downdir "/usr/local/Cellar/llvm" "clangd")))
+    (if-let* ((dir (search-file-for-downdir "/usr/local/Cellar/llvm" "clangd")))
         (setq exec-path (cons dir exec-path))))
 
 (defvar c-mode-company-use-lsp (cond ((executable-find "clangd")
@@ -363,7 +363,7 @@
 ;; windowsではピクセル荒くて_が消えるのでmacだけ
 (if system-darwin-p
     (custom-set-faces
-     '(hl-line ((t (:background nil
+     '(hl-line ((t (:background unspecified
 				;; _が見えなくなる対応、position に正の整数を指定すると、ベースラインより下に描画されます
 				:underline (:color "#333631" :position t) 
 				:extend t))))))
@@ -445,7 +445,7 @@
    `(yas-field-highlight-face ((t (:inherit match :inverse-video t))))
    ;; 選択バッファをわかりやすく表示
    `(mode-line ((t (:foreground "black" :background "orange"))))
-   `(mode-line-buffer-id ((t (:foreground nil :background nil))))
+   `(mode-line-buffer-id ((t (:foreground unspecified :background unspecified))))
    `(mode-line-inactive ((t (:foreground "gray50" :background "gray85"))))
    `(header-line ((t (:foreground "#51afef" :background "#505662"))))
    ;; elispでのcompletion-at-point での選択表示が分かりにくいので変更
@@ -549,7 +549,7 @@ NEWNAME will be added to the result buffer name.  New searches will use the
 standard buffer unless the search is done from a saved buffer in
 which case the saved buffer will be reused."
     (interactive)
-    (when-let ((buffer (rg-get-rename-target)))
+    (when-let* ((buffer (rg-get-rename-target)))
       (with-current-buffer buffer
 	(rename-buffer (format "*%s %s*" (rg--buffer-name) (rg-search-pattern rg-cur-search)) t))))
   )
@@ -1144,9 +1144,9 @@ If not in one of these searches, fallback to `exit-minibuffer'."
                    (while (not (eobp)) (sdicf-search-internal))
                    (nreverse entries))))))
 
-     (defadvice sdic-forward-item (after sdic-forward-item-always-top activate)
+     (define-advice sdic-forward-item (:after (&rest _) always-top)
        (recenter 0))
-     (defadvice sdic-backward-item (after sdic-backward-item-always-top activate)
+     (define-advice sdic-backward-item (:after (&rest _) always-top)
        (recenter 0))))
 
 (setq sdic-default-coding-system 'utf-8-unix)

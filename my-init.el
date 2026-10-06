@@ -24,29 +24,12 @@
 
 (setq package-check-signature nil)
 
+;; elispのflycheckを有効にする（ディレクトリは末尾に / を付ける）
+(add-to-list 'trusted-content "~/.emacs.d/")
+
 ;; ----------------------------------------------------------------
 ;; utility function
 ;; ----------------------------------------------------------------
-(defun search-file-for-downdir(dir filename)
-  "DIRから子ディレクトリ方向へ向かってFILENAMEを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す."
-  (if (file-directory-p dir)
-      (catch 'found
-        (message dir)
-        (let ((files (reverse (directory-files-and-attributes dir nil nil nil))))
-          (dolist (file files)
-            (let* ((dirp (eq t (car (cdr file))))     ;directory?
-                   (path (expand-file-name (car file) dir))
-                   (fname (car file)))
-              (cond
-               ((or (equal fname ".") (equal fname ".."))
-                nil)
-               (dirp
-                (if-let* ((res (search-file-for-downdir path  filename))) (throw 'found res)))
-               ((equal fname filename)
-                (message "hit %s" dir)
-                (throw 'found dir))
-               (t
-                nil))))))))
 
 (defun my/insert-date ()
   "Insert date at point."
@@ -59,10 +42,6 @@
 (defvar system-darwin-p (eq system-type 'darwin))
 (defvar system-windows-p (or (eq system-type 'windows-nt)
                              (eq system-type 'cygwin)))
-
-(if system-darwin-p
-    (if-let* ((dir (search-file-for-downdir "/usr/local/Cellar/llvm" "clangd")))
-        (setq exec-path (cons dir exec-path))))
 
 (defvar c-mode-company-use-lsp (cond ((executable-find "clangd")
                                       'clangd)

@@ -27,16 +27,6 @@
 ;; ----------------------------------------------------------------
 ;; utility function
 ;; ----------------------------------------------------------------
-(defun search-file-for-updir(dir filename)
-  "DIRから親ディレクトリ方向へ向かってFILENAMEを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す."
-  (cond
-   ((file-exists-p (expand-file-name filename dir))
-    dir)
-   ((equal (expand-file-name "/") dir)
-    nil)
-   (t
-    (search-file-for-updir (file-name-directory (directory-file-name dir)) filename))))
-
 (defun search-file-for-downdir(dir filename)
   "DIRから子ディレクトリ方向へ向かってFILENAMEを探し、最初に見つけたディレクトリ名を返す。見つからなかったらnilを返す."
   (if (file-directory-p dir)
@@ -607,7 +597,7 @@ With argument ARG, do this that many times."
          (elisp-path (replace-regexp-in-string "/bin/" "/share/" _exec-path)))
     (add-to-list 'load-path elisp-path))
   :hook
-  (c-mode-common-hook . (lambda() (if (search-file-for-updir  buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
+  (c-mode-common-hook . (lambda() (if (locate-dominating-file buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
                                       (gtags-mode 1))))
   :config
   (setq gtags-path-style 'relative)
@@ -663,7 +653,7 @@ With argument ARG, do this that many times."
   :if (eq completion-system 'helm)
   :ensure t
   :hook
-  (c-mode-common-hook . (lambda() (if (search-file-for-updir  buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
+  (c-mode-common-hook . (lambda() (if (locate-dominating-file buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
                                       (helm-gtags-mode 1))))
   :custom
   ((helm-gtags-ignore-case . nil)
@@ -684,7 +674,7 @@ With argument ARG, do this that many times."
   :if (eq completion-system 'ivy)
   :ensure t
   :hook
-  (c-mode-common-hook . (lambda() (if (search-file-for-updir  buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
+  (c-mode-common-hook . (lambda() (if (locate-dominating-file buffer-file-name "GTAGS")   ;; 上位ディレクトリにGTAGSがあるなら
                                       (counsel-gtags-mode 1))))
   :custom
   ((counsel-gtags-ignore-case . nil)
@@ -729,7 +719,7 @@ With argument ARG, do this that many times."
     (when (and (memq completion-system '(nil vertico))
                (fboundp 'gtags-mode)
                buffer-file-name
-               (search-file-for-updir buffer-file-name "GTAGS"))
+               (locate-dominating-file buffer-file-name "GTAGS"))
       (gtags-mode 1))
     (when c-mode-company-use-lsp
       (lsp)))

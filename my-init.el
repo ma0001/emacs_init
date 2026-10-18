@@ -1738,7 +1738,33 @@ If not in one of these searches, fallback to `exit-minibuffer'."
   :config
   ;; `claude /login' 済みのアカウント認証を利用（APIキー不要）
   (setopt agent-shell-anthropic-authentication
-          (agent-shell-anthropic-make-authentication :login t)))
+          (agent-shell-anthropic-make-authentication :login t))
+  ;; 各プロジェクトに散らばらないよう、~/.cache/agent-shell/<ディレクトリ名>/ に集めます。
+  (setq agent-shell-dot-subdir-function
+        (lambda (subdir)
+          (expand-file-name
+           subdir
+           (expand-file-name
+            (file-name-nondirectory (directory-file-name (agent-shell-cwd)))
+            "~/.cache/agent-shell/"))))
+  ;; 会話履歴は claude-agent-acp が ~/.claude/projects/ に保存し、CLIの
+  ;; `claude --resume' からも再開できるため、agent-shell独自のtranscriptは無効化。
+  (setq agent-shell-transcript-file-path-function nil)
+  ;; transcript無効時はshell-makerがkill時に保存を確認してくるので抑止
+  (add-hook 'agent-shell-mode-hook
+            (lambda () (setq-local shell-maker-prompt-before-killing-buffer nil)))
+  ;; resume時はsession/loadで最初と最後のやり取りだけ表示し、必要な時だけ全履歴を再表示する。
+  (setq agent-shell-session-restore-verbosity 'first-last)
+  (defun my/agent-shell-reload-with-history ()
+    "現在のセッションを読み直し、過去のやり取りをすべて表示する。"
+    (interactive)
+    (let ((name (buffer-name (or (agent-shell--current-shell)
+                                 (user-error "Not in a shell or viewport buffer")))))
+      (agent-shell-reload)
+      ;; restore方式は新バッファの非同期初期化時に参照されるため、バッファローカルで上書き
+      (with-current-buffer name
+        (setq-local agent-shell-session-restore-verbosity 'full))))
+  (setq agent-shell-preferred-agent-config '(preselect . claude-code)))
 
 ;; ----------------------------------------------------------------
 ;;  plantUML

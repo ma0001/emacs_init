@@ -785,6 +785,55 @@ With argument ARG, do this that many times."
   (setq read-extended-command-predicate #'command-completion-default-include-p)
   :config
   (vertico-mode 1)
+
+  ;; 長いファイルパスの候補は途中のディレクトリを「…」に省略して、
+  ;; ファイル名と注釈が画面内に収まるようにする（表示のみ、マッチング対象は元のパス）
+  (defun my-vertico--file-candidate-p (cand)
+    "Return non-nil if CAND is a file candidate."
+    (let ((cat (vertico--metadata-get 'category)))
+      (or (memq cat '(file project-file))
+          (and (eq cat 'multi-category)
+               (eq (car-safe (get-text-property 0 'multi-category cand)) 'file)))))
+
+  (defun my-vertico--shorten-path (path width)
+    "Shorten PATH to fit WIDTH by replacing middle directories with an ellipsis.
+Text properties (highlighting) of the kept parts are preserved."
+    (let* ((end (if (string-suffix-p "/" path) (1- (length path)) (length path)))
+           (seps (cl-loop for i from 0 below end
+                          when (eq (aref path i) ?/) collect i)))
+      (if (< (length seps) 2)
+          path
+        (let* ((head (substring path 0 (1+ (car seps))))
+               (ell (if (char-displayable-p ?…) "…" "..."))
+               (result nil))
+          ;; 末尾側のコンポーネントを入る限り残す（ファイル名は必ず残す）
+          (cl-loop for sep in (reverse (cdr seps))
+                   for cand = (concat head ell (substring path sep))
+                   while (or (null result) (<= (string-width cand) width))
+                   do (setq result cand))
+          result))))
+
+  (defun my-vertico--format-candidate-shorten (fn cand prefix suffix index start)
+    "Shorten long file path CAND before calling FN."
+    (when (my-vertico--file-candidate-p cand)
+      (let* ((max-width (- (vertico--window-width) 4))
+             (align (and suffix (text-property-any 0 (length suffix) 'marginalia--align t suffix)))
+             (avail (- max-width (string-width prefix) (string-width suffix))))
+        (when align
+          ;; marginalia の左揃え位置は元の長いパスで計算されているので画面内に詰める
+          (let* ((ann-width (string-width suffix (1+ align)))
+                 (col (min (or (bound-and-true-p marginalia--cand-width-max) max-width)
+                           (- max-width ann-width))))
+            (setq avail (- col (string-width prefix) 1))
+            (when (eq (bound-and-true-p marginalia-align) 'left)
+              (setq suffix (copy-sequence suffix))
+              (put-text-property align (1+ align) 'display `(space :align-to (+ left ,col)) suffix))))
+        (when (> (string-width cand) avail)
+          (setq cand (my-vertico--shorten-path cand avail)))))
+    (funcall fn cand prefix suffix index start))
+
+  (advice-add 'vertico--format-candidate :around #'my-vertico--format-candidate-shorten)
+
   (leaf vertico-directory
     :after vertico
     :bind (vertico-map

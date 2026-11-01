@@ -1132,6 +1132,19 @@ If not in one of these searches, fallback to `exit-minibuffer'."
 (eval-after-load "ispell"
  '(add-to-list 'ispell-skip-region-alist '("[^\000-\377]+")))
 
+;; flyspell は ispell-skip-region-alist を見ないので、ASCII 以外を含む単語は判定前に除外する
+(defun my/flyspell-ascii-word-p ()
+  "カーソル位置の単語が ASCII 文字だけならば non-nil を返す."
+  (let ((word (car-safe (flyspell-get-word))))
+    (and word (not (string-match-p "[^[:ascii:]]" word)))))
+
+(defun my/flyspell-prog-ascii-only ()
+  "`flyspell-prog-mode' で英語以外の単語をチェックしない."
+  (add-function :before-while (local 'flyspell-generic-check-word-predicate)
+                #'my/flyspell-ascii-word-p))
+
+(add-hook 'flyspell-prog-mode-hook #'my/flyspell-prog-ascii-only)
+
 ;; ----------------------------------------------------------------
 ;; eijiro
 ;; ----------------------------------------------------------------
